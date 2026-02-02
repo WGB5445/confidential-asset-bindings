@@ -1,7 +1,16 @@
 #!/bin/bash
+#
+# Generates the unified npm package from the WASM builds.
+# Run this after building all WASM packages.
+#
+
+set -e
+
+# Get the repo root (parent of scripts/)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$REPO_ROOT"
 
 # Define paths
-BASE_DIR="./"
 OUTPUT_DIR="./aptos-confidential-asset-wasm-bindings"
 OUTPUT_FILE="$OUTPUT_DIR/index.d.ts"
 PACKAGE_JSON="$OUTPUT_DIR/package.json"
@@ -12,12 +21,6 @@ PKG_VERSION="0.1.0"
 if ! command -v rollup &> /dev/null; then
   echo "Rollup is not installed. Installing Rollup..."
   npm install --global rollup
-fi
-
-# Ensure the base directory exists
-if [ ! -d "$BASE_DIR" ]; then
-  echo "Error: Directory $BASE_DIR does not exist."
-  exit 1
 fi
 
 # Step 1: Generate unified subfoldered package
@@ -44,8 +47,8 @@ cat <<EOF > "$PACKAGE_JSON"
   "exports": {
 EOF
 
-# Process each WASM package in the aptos-wasm folder
-for PACKAGE_DIR in "$BASE_DIR"/*; do
+# Process each WASM package
+for PACKAGE_DIR in ./*/; do
   if [ -d "$PACKAGE_DIR" ] && [ -f "$PACKAGE_DIR/Cargo.toml" ]; then
     PACKAGE_NAME=$(basename "$PACKAGE_DIR")
     PACKAGE_OUTPUT_DIR="$OUTPUT_DIR/$PACKAGE_NAME"
@@ -56,11 +59,9 @@ for PACKAGE_DIR in "$BASE_DIR"/*; do
     mkdir -p "$PACKAGE_OUTPUT_DIR"
     cp -r "$PACKAGE_DIR/pkg/"* "$PACKAGE_OUTPUT_DIR"
 
-    # Remove the subfolder's package.json file
-    if [ -f "$PACKAGE_OUTPUT_DIR/package.json" ]; then
-      rm "$PACKAGE_OUTPUT_DIR/package.json"
-      rm "$PACKAGE_OUTPUT_DIR/.gitignore"
-    fi
+    # Remove the subfolder's package.json and .gitignore files
+    rm -f "$PACKAGE_OUTPUT_DIR/package.json"
+    rm -f "$PACKAGE_OUTPUT_DIR/.gitignore"
 
     # Extract the WASM metadata
     MAIN_FILE=$(find "$PACKAGE_OUTPUT_DIR" -name "*.js" -print -quit)

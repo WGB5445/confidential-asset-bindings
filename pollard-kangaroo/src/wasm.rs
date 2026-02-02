@@ -1,33 +1,276 @@
-use curve25519_dalek_ng::ristretto::CompressedRistretto;
+//! WASM bindings for discrete log solvers.
+//!
+//! Supports both 16-bit and 32-bit discrete logs.
+//!
+//! Algorithm selection (compile time via feature flags):
+//! - `tbsgs_k` (default): TBSGS-k32 (32-bit) + NaiveTruncatedDoubledLookup (16-bit), sharing table via Arc
+//!   This is the recommended option: ~512 KiB table, smallest WASM with good performance.
+//! - `bsgs_k`: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit), sharing table via Arc
+//! - `bsgs`: BSGS (32-bit) + NaiveLookup (16-bit), sharing table via Arc
+//! - `bl12`: BL12 for both 16-bit and 32-bit (smallest table but slower)
+
+use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use wasm_bindgen::prelude::*;
-use pollard_kangaroo::kangaroo::Kangaroo;
-use pollard_kangaroo::kangaroo::presets::Presets;
 
+// ============================================================================
+// Helper: parse compressed point
+// ============================================================================
+
+fn parse_point(y: &[u8]) -> Result<RistrettoPoint, JsError> {
+    if y.len() != 32 {
+        return Err(JsError::new(&format!(
+            "invalid point length: expected 32 bytes, got {}",
+            y.len()
+        )));
+    }
+
+    let y_compressed =
+        CompressedRistretto::from_slice(y).map_err(|_| JsError::new("invalid compressed point"))?;
+
+    y_compressed
+        .decompress()
+        .ok_or_else(|| JsError::new("failed to decompress point"))
+}
+
+// ============================================================================
+// TBSGS-k feature: TBSGS-k32 (32-bit) + NaiveTruncatedDoubledLookup (16-bit)
+// Table shared via Arc between both solvers.
+// This is the recommended option: ~512 KiB table, smallest WASM with good performance.
+// ============================================================================
+
+#[cfg(feature = "tbsgs_k")]
+mod solver_impl {
+    use super::*;
+    use pollard_kangaroo::naive_truncated_doubled_lookup::NaiveTruncatedDoubledLookup;
+    use pollard_kangaroo::tbsgs_k::TruncatedBabyStepGiantStepK;
+
+    pub struct Solver {
+        solver_16: NaiveTruncatedDoubledLookup,
+        solver_32: TruncatedBabyStepGiantStepK<32>,
+    }
+
+    impl Solver {
+        pub fn new() -> Self {
+            use pollard_kangaroo::tbsgs_k::precomputed_tables::PrecomputedTables;
+
+            // Load the 32-bit solver first
+            let solver_32 = TruncatedBabyStepGiantStepK::<32>::from_precomputed_table(
+                PrecomputedTables::TbsgsK32,
+            );
+
+            // Create 16-bit solver sharing the same table via Arc
+            let solver_16 = NaiveTruncatedDoubledLookup::from_tbsgs_k(&solver_32);
+
+            Solver {
+                solver_16,
+                solver_32,
+            }
+        }
+
+        pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
+        }
+
+        pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
+        }
+
+        pub fn algorithm() -> &'static str {
+            "NaiveTruncatedDoubledLookup (16-bit) + TBSGS-k32 (32-bit)"
+        }
+    }
+}
+
+// ============================================================================
+// BSGS-k feature: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit)
+// Table shared via Arc between both solvers.
+// ============================================================================
+
+#[cfg(all(feature = "bsgs_k", not(feature = "tbsgs_k")))]
+mod solver_impl {
+    use super::*;
+    use pollard_kangaroo::bsgs_k::BabyStepGiantStepK;
+    use pollard_kangaroo::naive_doubled_lookup::NaiveDoubledLookup;
+
+    pub struct Solver {
+        solver_16: NaiveDoubledLookup,
+        solver_32: BabyStepGiantStepK<32>,
+    }
+
+    impl Solver {
+        pub fn new() -> Self {
+            use pollard_kangaroo::bsgs_k::precomputed_tables::PrecomputedTables;
+
+            // Load the 32-bit solver first
+            let solver_32 =
+                BabyStepGiantStepK::<32>::from_precomputed_table(PrecomputedTables::BsgsK32);
+
+            // Create 16-bit solver sharing the same table via Arc
+            let solver_16 = NaiveDoubledLookup::from_bsgs_k(&solver_32);
+
+            Solver {
+                solver_16,
+                solver_32,
+            }
+        }
+
+        pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
+        }
+
+        pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
+        }
+
+        pub fn algorithm() -> &'static str {
+            "NaiveDoubledLookup (16-bit) + BSGS-k32 (32-bit)"
+        }
+    }
+}
+
+// ============================================================================
+// BSGS feature: BSGS (32-bit) + NaiveLookup (16-bit)
+// Table shared via Arc between both solvers.
+// ============================================================================
+
+#[cfg(all(feature = "bsgs", not(any(feature = "tbsgs_k", feature = "bsgs_k"))))]
+mod solver_impl {
+    use super::*;
+    use pollard_kangaroo::bsgs::BabyStepGiantStep;
+    use pollard_kangaroo::naive_lookup::NaiveLookup;
+
+    pub struct Solver {
+        solver_16: NaiveLookup,
+        solver_32: BabyStepGiantStep,
+    }
+
+    impl Solver {
+        pub fn new() -> Self {
+            use pollard_kangaroo::bsgs::precomputed_tables::PrecomputedTables;
+
+            // Load the 32-bit solver first
+            let solver_32 = BabyStepGiantStep::from_precomputed_table(PrecomputedTables::Bsgs32);
+
+            // Create 16-bit solver sharing the same table via Arc
+            let solver_16 = NaiveLookup::from_bsgs(&solver_32);
+
+            Solver {
+                solver_16,
+                solver_32,
+            }
+        }
+
+        pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
+        }
+
+        pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
+        }
+
+        pub fn algorithm() -> &'static str {
+            "NaiveLookup (16-bit) + BSGS (32-bit)"
+        }
+    }
+}
+
+// ============================================================================
+// BL12 feature: BL12 for both 16-bit and 32-bit (smallest WASM)
+// ============================================================================
+
+#[cfg(all(
+    feature = "bl12",
+    not(any(feature = "tbsgs_k", feature = "bsgs_k", feature = "bsgs"))
+))]
+mod solver_impl {
+    use super::*;
+    use pollard_kangaroo::bl12::Bl12;
+
+    pub struct Solver {
+        solver: Bl12,
+    }
+
+    impl Solver {
+        pub fn new() -> Self {
+            use pollard_kangaroo::bl12::precomputed_tables::PrecomputedTables;
+
+            Solver {
+                solver: Bl12::from_precomputed_table(PrecomputedTables::BernsteinLange32),
+            }
+        }
+
+        pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
+        }
+
+        pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
+            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver, y)
+                .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
+        }
+
+        pub fn algorithm() -> &'static str {
+            "BL12 (16-bit and 32-bit)"
+        }
+    }
+}
+
+// ============================================================================
+// WASM-exported DiscreteLogSolver
+// ============================================================================
+
+/// Discrete log solver supporting 16-bit and 32-bit secrets.
 #[wasm_bindgen]
-pub struct WASMKangaroo(Kangaroo);
-
-#[wasm_bindgen]
-pub fn create_kangaroo(secret_size: u8) -> Result<WASMKangaroo, JsError> {
-    let preset = match secret_size {
-        16 => Presets::Kangaroo16,
-        32 => Presets::Kangaroo32,
-        48 => Presets::Kangaroo48,
-        _ => return Err(JsError::new("invalid secret size")),
-    };
-
-    let kangaroo = Kangaroo::from_preset(preset)
-        .map_err(|_| JsError::new("failed to create kangaroo"))?;
-
-    Ok(WASMKangaroo(kangaroo))
+pub struct DiscreteLogSolver {
+    solver: solver_impl::Solver,
 }
 
 #[wasm_bindgen]
-impl WASMKangaroo {
-    pub fn solve_dlp(&self, pk: Vec<u8>, max_time: Option<u64>) -> Result<Option<u64>, JsError> {
-        let pk = CompressedRistretto::from_slice(&pk)
-            .decompress()
-            .ok_or_else(|| JsError::new("invalid point"))?;
+impl DiscreteLogSolver {
+    /// Creates a new solver with precomputed tables.
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> DiscreteLogSolver {
+        DiscreteLogSolver {
+            solver: solver_impl::Solver::new(),
+        }
+    }
 
-        Ok(self.0.solve_dlp(&pk, max_time).map_err(|_| JsError::new("failed to solve dlp"))?)
+    /// Solves the discrete log problem.
+    ///
+    /// Given a compressed Ristretto point y = g^x (32 bytes), finds x.
+    ///
+    /// # Arguments
+    /// * `y` - The compressed Ristretto point (32 bytes)
+    /// * `max_num_bits` - Maximum bits of the secret: 16 or 32
+    ///
+    /// # Returns
+    /// The discrete log x, or an error if not found or invalid input.
+    pub fn solve(&self, y: Vec<u8>, max_num_bits: u8) -> Result<u64, JsError> {
+        let y_point = parse_point(&y)?;
+
+        match max_num_bits {
+            16 => self.solver.solve_16bit(&y_point),
+            32 => self.solver.solve_32bit(&y_point),
+            _ => Err(JsError::new(&format!(
+                "unsupported max_num_bits: {}. Must be 16 or 32.",
+                max_num_bits
+            ))),
+        }
+    }
+
+    /// Returns the supported bit sizes as an array [16, 32].
+    pub fn max_num_bits(&self) -> Vec<u8> {
+        vec![16, 32]
+    }
+
+    /// Returns the algorithm name.
+    pub fn algorithm(&self) -> String {
+        solver_impl::Solver::algorithm().to_string()
     }
 }

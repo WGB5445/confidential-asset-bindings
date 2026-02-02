@@ -1,24 +1,50 @@
 /* tslint:disable */
 /* eslint-disable */
-export function create_kangaroo(secret_size: number): WASMKangaroo;
-export class WASMKangaroo {
-  private constructor();
+/**
+ * Discrete log solver supporting 16-bit and 32-bit secrets.
+ */
+export class DiscreteLogSolver {
   free(): void;
-  solve_dlp(pk: Uint8Array, max_time?: bigint | null): bigint | undefined;
+  /**
+   * Returns the supported bit sizes as an array [16, 32].
+   */
+  max_num_bits(): Uint8Array;
+  /**
+   * Creates a new solver with precomputed tables.
+   */
+  constructor();
+  /**
+   * Solves the discrete log problem.
+   *
+   * Given a compressed Ristretto point y = g^x (32 bytes), finds x.
+   *
+   * # Arguments
+   * * `y` - The compressed Ristretto point (32 bytes)
+   * * `max_num_bits` - Maximum bits of the secret: 16 or 32
+   *
+   * # Returns
+   * The discrete log x, or an error if not found or invalid input.
+   */
+  solve(y: Uint8Array, max_num_bits: number): bigint;
+  /**
+   * Returns the algorithm name.
+   */
+  algorithm(): string;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_wasmkangaroo_free: (a: number, b: number) => void;
-  readonly create_kangaroo: (a: number) => [number, number, number];
-  readonly wasmkangaroo_solve_dlp: (a: number, b: number, c: number, d: number, e: bigint) => [number, bigint, number, number];
-  readonly __wbindgen_exn_store: (a: number) => void;
-  readonly __externref_table_alloc: () => number;
-  readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly __externref_table_dealloc: (a: number) => void;
+  readonly __wbg_discretelogsolver_free: (a: number, b: number) => void;
+  readonly discretelogsolver_algorithm: (a: number) => [number, number];
+  readonly discretelogsolver_max_num_bits: (a: number) => [number, number];
+  readonly discretelogsolver_new: () => number;
+  readonly discretelogsolver_solve: (a: number, b: number, c: number, d: number) => [bigint, number, number];
+  readonly __wbindgen_export_0: WebAssembly.Table;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
+  readonly __externref_table_dealloc: (a: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

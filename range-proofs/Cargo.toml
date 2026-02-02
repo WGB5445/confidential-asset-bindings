@@ -5,6 +5,8 @@ edition = "2021"
 [dependencies]
 wasm-bindgen = "0.2.93"
 bulletproofs = "4.0.0"
+# Override transitive dep to avoid C compilation for wasm32
+clear_on_drop = { version = "0.2.5", features = ["no_cc"] }
 once_cell = "1.10.0"
 curve25519-dalek-ng = "4"
 merlin = "3"
