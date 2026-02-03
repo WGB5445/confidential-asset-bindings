@@ -1,0 +1,49 @@
+[package]
+name = "aptos_confidential_asset_wasm"
+version = "0.1.0"
+edition = "2021"
+description = "Unified WASM bindings for Aptos confidential assets (discrete log + range proofs)"
+
+[features]
+default = ["tbsgs_k"]
+
+# Discrete log algorithm selection (only enable one at a time to minimize WASM size)
+# - tbsgs_k (default, recommended): TBSGS-k32 (32-bit) + NaiveTruncatedDoubledLookup (16-bit)
+#   Smallest table (~512 KiB) with good performance.
+# - bsgs_k: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit), sharing BSGS-k table (~2 MiB)
+# - bsgs: BSGS (32-bit) + NaiveLookup from BSGS baby_steps (16-bit), sharing BSGS table (~2 MiB)
+# - bl12: BL12 (32-bit + 16-bit) - smallest table (~258 KiB) but slower
+tbsgs_k = ["pollard-kangaroo/tbsgs_k_table32"]
+bsgs_k = ["pollard-kangaroo/bsgs_k_table32"]
+bsgs = ["pollard-kangaroo/bsgs_table32"]
+bl12 = ["pollard-kangaroo/bl12_table32"]
+
+[dependencies]
+# Shared elliptic curve library (used by both discrete log and range proofs)
+curve25519-dalek = { version = "4", default-features = false }
+
+# WASM bindings
+wasm-bindgen = "0.2.99"
+js-sys = "0.3.77"
+getrandom = { version = "0.2", features = ["js"] }
+
+# Range proofs (v5.0.0 uses curve25519-dalek v4, compatible with pollard-kangaroo)
+bulletproofs = "5.0.0"
+merlin = "3"
+once_cell = "1.10.0"
+
+# Override transitive dep to avoid C compilation for wasm32
+clear_on_drop = { version = "0.2.5", features = ["no_cc"] }
+
+# Discrete log
+pollard-kangaroo = { path = "../../pollard-kangaroo", default-features = false }
+
+[dev-dependencies]
+# bulletproofs v4.0.0 for cross-version compatibility testing
+# This uses curve25519-dalek-ng but proof format should be compatible
+bulletproofs_v4 = { package = "bulletproofs", version = "4.0.0" }
+curve25519-dalek-ng = "4"
+rand = "0.8"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

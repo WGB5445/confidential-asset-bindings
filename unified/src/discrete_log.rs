@@ -1,13 +1,7 @@
-//! WASM bindings for discrete log solvers.
+//! Discrete log solver functionality.
 //!
-//! Supports both 16-bit and 32-bit discrete logs.
-//!
-//! Algorithm selection (compile time via feature flags):
-//! - `tbsgs_k` (default): TBSGS-k32 (32-bit) + NaiveTruncatedDoubledLookup (16-bit), sharing table via Arc
-//!   This is the recommended option: ~512 KiB table, smallest WASM with good performance.
-//! - `bsgs_k`: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit), sharing table via Arc
-//! - `bsgs`: BSGS (32-bit) + NaiveLookup (16-bit), sharing table via Arc
-//! - `bl12`: BL12 for both 16-bit and 32-bit (smallest table but slower)
+//! Provides WASM-exportable functions for solving discrete log problems.
+//! Supports 16-bit and 32-bit discrete logs with various algorithm options.
 
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use wasm_bindgen::prelude::*;
@@ -34,7 +28,6 @@ fn parse_point(y: &[u8]) -> Result<RistrettoPoint, JsError> {
 
 // ============================================================================
 // TBSGS-k feature: TBSGS-k32 (32-bit) + NaiveTruncatedDoubledLookup (16-bit)
-// Table shared via Arc between both solvers.
 // This is the recommended option: ~512 KiB table, smallest WASM with good performance.
 // ============================================================================
 
@@ -53,12 +46,10 @@ mod solver_impl {
         pub fn new() -> Self {
             use pollard_kangaroo::tbsgs_k::precomputed_tables::PrecomputedTables;
 
-            // Load the 32-bit solver first
             let solver_32 = TruncatedBabyStepGiantStepK::<32>::from_precomputed_table(
                 PrecomputedTables::TbsgsK32,
             );
 
-            // Create 16-bit solver sharing the same table via Arc
             let solver_16 = NaiveTruncatedDoubledLookup::from_tbsgs_k(&solver_32);
 
             Solver {
@@ -85,7 +76,6 @@ mod solver_impl {
 
 // ============================================================================
 // BSGS-k feature: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit)
-// Table shared via Arc between both solvers.
 // ============================================================================
 
 #[cfg(all(feature = "bsgs_k", not(feature = "tbsgs_k")))]
@@ -103,11 +93,9 @@ mod solver_impl {
         pub fn new() -> Self {
             use pollard_kangaroo::bsgs_k::precomputed_tables::PrecomputedTables;
 
-            // Load the 32-bit solver first
             let solver_32 =
                 BabyStepGiantStepK::<32>::from_precomputed_table(PrecomputedTables::BsgsK32);
 
-            // Create 16-bit solver sharing the same table via Arc
             let solver_16 = NaiveDoubledLookup::from_bsgs_k(&solver_32);
 
             Solver {
@@ -134,7 +122,6 @@ mod solver_impl {
 
 // ============================================================================
 // BSGS feature: BSGS (32-bit) + NaiveLookup (16-bit)
-// Table shared via Arc between both solvers.
 // ============================================================================
 
 #[cfg(all(feature = "bsgs", not(any(feature = "tbsgs_k", feature = "bsgs_k"))))]
@@ -152,10 +139,8 @@ mod solver_impl {
         pub fn new() -> Self {
             use pollard_kangaroo::bsgs::precomputed_tables::PrecomputedTables;
 
-            // Load the 32-bit solver first
             let solver_32 = BabyStepGiantStep::from_precomputed_table(PrecomputedTables::Bsgs32);
 
-            // Create 16-bit solver sharing the same table via Arc
             let solver_16 = NaiveLookup::from_bsgs(&solver_32);
 
             Solver {
@@ -181,7 +166,7 @@ mod solver_impl {
 }
 
 // ============================================================================
-// BL12 feature: BL12 for both 16-bit and 32-bit (smallest WASM)
+// BL12 feature: BL12 for both 16-bit and 32-bit (smallest table)
 // ============================================================================
 
 #[cfg(all(

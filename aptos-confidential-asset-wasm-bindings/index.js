@@ -1,0 +1,1 @@
+aptos_confidential_asset_wasm-esm.js

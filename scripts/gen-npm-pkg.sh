@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Generates the unified npm package from the WASM builds.
-# Run this after building all WASM packages.
+# Generates the npm package from the unified WASM build.
+# Run this after building the unified WASM package.
 #
 
 set -e
@@ -12,10 +12,8 @@ cd "$REPO_ROOT"
 
 # Define paths
 OUTPUT_DIR="./aptos-confidential-asset-wasm-bindings"
-OUTPUT_FILE="$OUTPUT_DIR/index.d.ts"
 PACKAGE_JSON="$OUTPUT_DIR/package.json"
 PKG_NAME="@aptos-labs/confidential-asset-wasm-bindings"
-PKG_VERSION="0.1.0"
 
 # Check and Install Rollup
 if ! command -v rollup &> /dev/null; then
@@ -23,139 +21,89 @@ if ! command -v rollup &> /dev/null; then
   npm install --global rollup
 fi
 
-# Step 1: Generate unified subfoldered package
-echo "Generating unified subfoldered package in $OUTPUT_DIR..."
+# Get next version by incrementing patch
+CURRENT_VERSION=$(npm view $PKG_NAME version 2>/dev/null || echo "0.1.0")
+NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+
+echo "Generating npm package (version $NEW_VERSION)..."
+
+# Clean and create output directory
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
-CURRENT_VERSION=$(npm view $PKG_NAME version)
+# Copy unified pkg files
+mkdir -p "$OUTPUT_DIR"
+cp -r unified/pkg/* "$OUTPUT_DIR/"
 
-# Increase patch
-NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+# Remove unnecessary files
+rm -f "$OUTPUT_DIR/package.json"
+rm -f "$OUTPUT_DIR/.gitignore"
 
-# Initialize the main package.json
+# Get file names
+JS_FILE=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.js" -print -quit)
+TYPES_FILE=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.d.ts" -not -name "*.wasm.d.ts" -print -quit)
+WASM_FILE=$(find "$OUTPUT_DIR" -maxdepth 1 -name "*.wasm" -print -quit)
+
+JS_BASENAME=$(basename "$JS_FILE")
+TYPES_BASENAME=$(basename "$TYPES_FILE")
+WASM_BASENAME=$(basename "$WASM_FILE")
+
+# Rename JS to ESM format
+ESM_FILE="${JS_FILE%.js}-esm.js"
+mv "$JS_FILE" "$ESM_FILE"
+ESM_BASENAME=$(basename "$ESM_FILE")
+
+# Create CJS format with Rollup
+CJS_BASENAME="${ESM_BASENAME%-esm.js}-cjs.js"
+CJS_FILE="$OUTPUT_DIR/$CJS_BASENAME"
+echo "Creating CJS format..."
+npx rollup "$ESM_FILE" --file "$CJS_FILE" --format cjs 2>/dev/null
+
+# Generate package.json
 cat <<EOF > "$PACKAGE_JSON"
 {
   "name": "$PKG_NAME",
   "version": "$NEW_VERSION",
-  "description": "Unified bindings for confidential asset WASM packages",
+  "description": "Unified WASM bindings for Aptos confidential assets (discrete log + range proofs)",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptos-labs/confidential-asset-wasm-bindings.git"
   },
+  "main": "./$CJS_BASENAME",
+  "module": "./$ESM_BASENAME",
+  "types": "./$TYPES_BASENAME",
   "exports": {
-EOF
-
-# Process each WASM package
-for PACKAGE_DIR in ./*/; do
-  if [ -d "$PACKAGE_DIR" ] && [ -f "$PACKAGE_DIR/Cargo.toml" ]; then
-    PACKAGE_NAME=$(basename "$PACKAGE_DIR")
-    PACKAGE_OUTPUT_DIR="$OUTPUT_DIR/$PACKAGE_NAME"
-
-    echo "Processing package: $PACKAGE_NAME"
-
-    # Copy the pkg directory to the unified bindings folder
-    mkdir -p "$PACKAGE_OUTPUT_DIR"
-    cp -r "$PACKAGE_DIR/pkg/"* "$PACKAGE_OUTPUT_DIR"
-
-    # Remove the subfolder's package.json and .gitignore files
-    rm -f "$PACKAGE_OUTPUT_DIR/package.json"
-    rm -f "$PACKAGE_OUTPUT_DIR/.gitignore"
-
-    # Extract the WASM metadata
-    MAIN_FILE=$(find "$PACKAGE_OUTPUT_DIR" -name "*.js" -print -quit)
-    TYPES_FILE=$(find "$PACKAGE_OUTPUT_DIR" -name "*.d.ts" -not -name "*.wasm.d.ts" -print -quit)
-
-    # Rename main.js to main-esm.js
-    ESM_FILE="${MAIN_FILE%.js}-esm.js"
-    mv "$MAIN_FILE" "$ESM_FILE"
-    echo "Renamed $(basename "$MAIN_FILE") to $(basename "$ESM_FILE")"
-
-    # Step 2: Run Rollup to create CJS format
-    CJS_FILE="${ESM_FILE%-esm.js}-cjs.js"
-    echo "Creating CJS format for $PACKAGE_NAME..."
-    npx rollup "$ESM_FILE" --file "$CJS_FILE" --format cjs
-
-    # Add the package export entry to the main package.json
-    cat <<EOF >> "$PACKAGE_JSON"
-    "./$PACKAGE_NAME": {
-      "import": "./$PACKAGE_NAME/$(basename "$ESM_FILE")",
-      "require": "./$PACKAGE_NAME/$(basename "$CJS_FILE")",
-      "types": "./$PACKAGE_NAME/$(basename "$TYPES_FILE")"
+    ".": {
+      "import": "./$ESM_BASENAME",
+      "require": "./$CJS_BASENAME",
+      "types": "./$TYPES_BASENAME"
     },
-EOF
-  fi
-done
-
-# Finalize the main package.json
-# Remove the trailing comma in the exports object (compatible with macOS and Linux)
-TEMP_FILE=$(mktemp)
-sed '$ s/,$//' "$PACKAGE_JSON" > "$TEMP_FILE" && mv "$TEMP_FILE" "$PACKAGE_JSON"
-
-# Add the closing braces to package.json
-cat <<EOF >> "$PACKAGE_JSON"
+    "./*.wasm": "./$WASM_BASENAME"
   },
-  "typesVersions": {
-    "*": {
-      "*": ["./index.d.ts"],
-EOF
-
-# Append each subdirectory name to the `typesVersions` array
-for SUBDIR in "$OUTPUT_DIR"/*; do
-  if [ -d "$SUBDIR" ]; then
-    SUBDIR_NAME=$(basename "$SUBDIR")
-
-    CURR_TYPES_FILE=$(find "$SUBDIR" -name "*.d.ts" -not -name "*.wasm.d.ts" -print -quit)
-
-    echo "      \"$SUBDIR_NAME\": [\"./$SUBDIR_NAME/$(basename "$CURR_TYPES_FILE")\"]," >> "$PACKAGE_JSON"
-  fi
-done
-
-# Remove the trailing comma and close the JSON array
-sed -i '' -e '$ s/,$//' "$PACKAGE_JSON" # macOS-compatible sed command
-cat <<EOF >> "$PACKAGE_JSON"
-    }
-  }
+  "files": [
+    "$ESM_BASENAME",
+    "$CJS_BASENAME",
+    "$TYPES_BASENAME",
+    "*.wasm",
+    "*.wasm.d.ts"
+  ],
+  "keywords": [
+    "aptos",
+    "confidential",
+    "wasm",
+    "bulletproofs",
+    "discrete-log",
+    "range-proof"
+  ],
+  "license": "Apache-2.0"
 }
 EOF
 
-echo "Unified package.json generated at $PACKAGE_JSON."
+# Create index.js and index.d.ts symlinks for simple import
+(cd "$OUTPUT_DIR" && ln -sf "$ESM_BASENAME" index.js && ln -sf "$TYPES_BASENAME" index.d.ts)
 
-# Step 3: Generate index.d.ts file
-echo "Generating index.d.ts file..."
-
-# Start the index.d.ts file
-echo "// Auto-generated index.d.ts file" > "$OUTPUT_FILE"
-echo >> "$OUTPUT_FILE"
-
-# Function to convert kebab-case to camelCase
-kebab_to_camel() {
-  local str="$1"
-  echo "$str" | awk -F'-' '{ for (i=1; i<=NF; i++) { if (i==1) printf $i; else printf toupper(substr($i,1,1)) substr($i,2) } }'
-}
-
-# Process each subdirectory with a .d.ts file
-for PACKAGE_DIR in "$OUTPUT_DIR"/*; do
-  if [ -d "$PACKAGE_DIR" ]; then
-    DTS_FILE=$(find "$PACKAGE_DIR" -name "*.d.ts" -not -name "*.wasm.d.ts" -print -quit)
-
-    # If a .d.ts file is found, add its namespace export to the index.d.ts
-    if [ -n "$DTS_FILE" ]; then
-      PACKAGE_NAME=$(basename "$PACKAGE_DIR")
-      CAMEL_CASE_NAME=$(kebab_to_camel "$PACKAGE_NAME")
-      DTS_FILE_NO_EXT=${DTS_FILE%.d.ts} # Remove the .d.ts extension
-
-      # Add import and namespace wrapper for each package
-      echo "import * as ${CAMEL_CASE_NAME}Module from './$PACKAGE_NAME/$(basename "$DTS_FILE_NO_EXT")';" >> "$OUTPUT_FILE"
-      echo "declare namespace $CAMEL_CASE_NAME {" >> "$OUTPUT_FILE"
-      echo "  export import Types = ${CAMEL_CASE_NAME}Module;" >> "$OUTPUT_FILE"
-      echo "}" >> "$OUTPUT_FILE"
-      echo >> "$OUTPUT_FILE"
-    fi
-  fi
-done
-
-echo "index.d.ts file generated at $OUTPUT_FILE."
-
-echo "Script completed successfully."
+echo "Generated npm package at $OUTPUT_DIR/"
+echo ""
+echo "Files:"
+ls -lh "$OUTPUT_DIR"

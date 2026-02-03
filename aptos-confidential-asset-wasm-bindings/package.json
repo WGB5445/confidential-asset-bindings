@@ -1,29 +1,37 @@
 {
   "name": "@aptos-labs/confidential-asset-wasm-bindings",
   "version": "0.0.3",
-  "description": "Unified bindings for confidential asset WASM packages",
+  "description": "Unified WASM bindings for Aptos confidential assets (discrete log + range proofs)",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/aptos-labs/confidential-asset-wasm-bindings.git"
   },
+  "main": "./aptos_confidential_asset_wasm-cjs.js",
+  "module": "./aptos_confidential_asset_wasm-esm.js",
+  "types": "./aptos_confidential_asset_wasm.d.ts",
   "exports": {
-    "./pollard-kangaroo": {
-      "import": "./pollard-kangaroo/aptos_pollard_kangaroo_wasm-esm.js",
-      "require": "./pollard-kangaroo/aptos_pollard_kangaroo_wasm-cjs.js",
-      "types": "./pollard-kangaroo/aptos_pollard_kangaroo_wasm.d.ts"
+    ".": {
+      "import": "./aptos_confidential_asset_wasm-esm.js",
+      "require": "./aptos_confidential_asset_wasm-cjs.js",
+      "types": "./aptos_confidential_asset_wasm.d.ts"
     },
-    "./range-proofs": {
-      "import": "./range-proofs/aptos_rp_wasm-esm.js",
-      "require": "./range-proofs/aptos_rp_wasm-cjs.js",
-      "types": "./range-proofs/aptos_rp_wasm.d.ts"
-    }
+    "./*.wasm": "./aptos_confidential_asset_wasm_bg.wasm"
   },
-  "typesVersions": {
-    "*": {
-      "*": ["./index.d.ts"],
-      "pollard-kangaroo": ["./pollard-kangaroo/aptos_pollard_kangaroo_wasm.d.ts"],
-      "range-proofs": ["./range-proofs/aptos_rp_wasm.d.ts"]
-    }
-  }
+  "files": [
+    "aptos_confidential_asset_wasm-esm.js",
+    "aptos_confidential_asset_wasm-cjs.js",
+    "aptos_confidential_asset_wasm.d.ts",
+    "*.wasm",
+    "*.wasm.d.ts"
+  ],
+  "keywords": [
+    "aptos",
+    "confidential",
+    "wasm",
+    "bulletproofs",
+    "discrete-log",
+    "range-proof"
+  ],
+  "license": "Apache-2.0"
 }
