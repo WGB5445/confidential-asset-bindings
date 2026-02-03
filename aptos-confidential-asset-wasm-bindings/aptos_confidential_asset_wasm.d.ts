@@ -1,24 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * Verify a batch range proof.
- */
-export function batch_verify_proof(proof: Uint8Array, comms: Uint8Array[], val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): boolean;
-/**
  * Verify a single range proof.
  */
 export function verify_proof(proof: Uint8Array, comm: Uint8Array, val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): boolean;
 /**
- * Generate a single range proof.
- *
- * # Arguments
- * * `v` - The secret value to prove is in range [0, 2^num_bits)
- * * `r` - The blinding factor (32-byte scalar)
- * * `val_base` - Value base point for Pedersen commitment (32-byte compressed point)
- * * `rand_base` - Randomness base point for Pedersen commitment (32-byte compressed point)
- * * `num_bits` - Bit length for range proof (8, 16, 32, or 64)
+ * Verify a batch range proof.
  */
-export function range_proof(v: bigint, r: Uint8Array, val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): SingleRangeProof;
+export function batch_verify_proof(proof: Uint8Array, comms: Uint8Array[], val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): boolean;
 /**
  * Generate a batch range proof for multiple values.
  *
@@ -30,6 +19,17 @@ export function range_proof(v: bigint, r: Uint8Array, val_base: Uint8Array, rand
  * * `num_bits` - Bit length for range proof (8, 16, 32, or 64)
  */
 export function batch_range_proof(v: BigUint64Array, rs: Uint8Array[], val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): BatchRangeProof;
+/**
+ * Generate a single range proof.
+ *
+ * # Arguments
+ * * `v` - The secret value to prove is in range [0, 2^num_bits)
+ * * `r` - The blinding factor (32-byte scalar)
+ * * `val_base` - Value base point for Pedersen commitment (32-byte compressed point)
+ * * `rand_base` - Randomness base point for Pedersen commitment (32-byte compressed point)
+ * * `num_bits` - Bit length for range proof (8, 16, 32, or 64)
+ */
+export function range_proof(v: bigint, r: Uint8Array, val_base: Uint8Array, rand_base: Uint8Array, num_bits: number): SingleRangeProof;
 /**
  * Result of a batch range proof generation
  */

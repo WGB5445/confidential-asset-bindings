@@ -36,8 +36,8 @@ dependencies = [
  "js-sys",
  "merlin",
  "once_cell",
- "pollard-kangaroo",
  "rand",
+ "ristretto255-dlog",
  "wasm-bindgen",
 ]
 
@@ -525,19 +525,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
-name = "pollard-kangaroo"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bincode",
- "curve25519-dalek",
- "rand_core",
- "serde",
- "serde_with",
- "web-time",
-]
-
-[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -598,6 +585,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom",
+]
+
+[[package]]
+name = "ristretto255-dlog"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "curve25519-dalek",
+ "rand_core",
+ "serde",
+ "serde_with",
+ "web-time",
 ]
 
 [[package]]

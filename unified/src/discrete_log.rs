@@ -34,8 +34,8 @@ fn parse_point(y: &[u8]) -> Result<RistrettoPoint, JsError> {
 #[cfg(feature = "tbsgs_k")]
 mod solver_impl {
     use super::*;
-    use pollard_kangaroo::naive_truncated_doubled_lookup::NaiveTruncatedDoubledLookup;
-    use pollard_kangaroo::tbsgs_k::TruncatedBabyStepGiantStepK;
+    use ristretto255_dlog::naive_truncated_doubled_lookup::NaiveTruncatedDoubledLookup;
+    use ristretto255_dlog::tbsgs_k::TruncatedBabyStepGiantStepK;
 
     pub struct Solver {
         solver_16: NaiveTruncatedDoubledLookup,
@@ -44,7 +44,7 @@ mod solver_impl {
 
     impl Solver {
         pub fn new() -> Self {
-            use pollard_kangaroo::tbsgs_k::precomputed_tables::PrecomputedTables;
+            use ristretto255_dlog::tbsgs_k::precomputed_tables::PrecomputedTables;
 
             let solver_32 = TruncatedBabyStepGiantStepK::<32>::from_precomputed_table(
                 PrecomputedTables::TbsgsK32,
@@ -59,12 +59,12 @@ mod solver_impl {
         }
 
         pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_16, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
         }
 
         pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_32, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
         }
 
@@ -81,8 +81,8 @@ mod solver_impl {
 #[cfg(all(feature = "bsgs_k", not(feature = "tbsgs_k")))]
 mod solver_impl {
     use super::*;
-    use pollard_kangaroo::bsgs_k::BabyStepGiantStepK;
-    use pollard_kangaroo::naive_doubled_lookup::NaiveDoubledLookup;
+    use ristretto255_dlog::bsgs_k::BabyStepGiantStepK;
+    use ristretto255_dlog::naive_doubled_lookup::NaiveDoubledLookup;
 
     pub struct Solver {
         solver_16: NaiveDoubledLookup,
@@ -91,7 +91,7 @@ mod solver_impl {
 
     impl Solver {
         pub fn new() -> Self {
-            use pollard_kangaroo::bsgs_k::precomputed_tables::PrecomputedTables;
+            use ristretto255_dlog::bsgs_k::precomputed_tables::PrecomputedTables;
 
             let solver_32 =
                 BabyStepGiantStepK::<32>::from_precomputed_table(PrecomputedTables::BsgsK32);
@@ -105,12 +105,12 @@ mod solver_impl {
         }
 
         pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_16, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
         }
 
         pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_32, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
         }
 
@@ -127,8 +127,8 @@ mod solver_impl {
 #[cfg(all(feature = "bsgs", not(any(feature = "tbsgs_k", feature = "bsgs_k"))))]
 mod solver_impl {
     use super::*;
-    use pollard_kangaroo::bsgs::BabyStepGiantStep;
-    use pollard_kangaroo::naive_lookup::NaiveLookup;
+    use ristretto255_dlog::bsgs::BabyStepGiantStep;
+    use ristretto255_dlog::naive_lookup::NaiveLookup;
 
     pub struct Solver {
         solver_16: NaiveLookup,
@@ -137,7 +137,7 @@ mod solver_impl {
 
     impl Solver {
         pub fn new() -> Self {
-            use pollard_kangaroo::bsgs::precomputed_tables::PrecomputedTables;
+            use ristretto255_dlog::bsgs::precomputed_tables::PrecomputedTables;
 
             let solver_32 = BabyStepGiantStep::from_precomputed_table(PrecomputedTables::Bsgs32);
 
@@ -150,12 +150,12 @@ mod solver_impl {
         }
 
         pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_16, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_16, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
         }
 
         pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver_32, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver_32, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
         }
 
@@ -175,7 +175,7 @@ mod solver_impl {
 ))]
 mod solver_impl {
     use super::*;
-    use pollard_kangaroo::bl12::Bl12;
+    use ristretto255_dlog::bl12::Bl12;
 
     pub struct Solver {
         solver: Bl12,
@@ -183,7 +183,7 @@ mod solver_impl {
 
     impl Solver {
         pub fn new() -> Self {
-            use pollard_kangaroo::bl12::precomputed_tables::PrecomputedTables;
+            use ristretto255_dlog::bl12::precomputed_tables::PrecomputedTables;
 
             Solver {
                 solver: Bl12::from_precomputed_table(PrecomputedTables::BernsteinLange32),
@@ -191,12 +191,12 @@ mod solver_impl {
         }
 
         pub fn solve_16bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 16-bit discrete log: {}", e)))
         }
 
         pub fn solve_32bit(&self, y: &RistrettoPoint) -> Result<u64, JsError> {
-            pollard_kangaroo::DiscreteLogSolver::solve(&self.solver, y)
+            ristretto255_dlog::DiscreteLogSolver::solve(&self.solver, y)
                 .map_err(|e| JsError::new(&format!("failed to solve 32-bit discrete log: {}", e)))
         }
 

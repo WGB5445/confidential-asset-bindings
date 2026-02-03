@@ -13,10 +13,10 @@ default = ["tbsgs_k"]
 # - bsgs_k: BSGS-k32 (32-bit) + NaiveDoubledLookup (16-bit), sharing BSGS-k table (~2 MiB)
 # - bsgs: BSGS (32-bit) + NaiveLookup from BSGS baby_steps (16-bit), sharing BSGS table (~2 MiB)
 # - bl12: BL12 (32-bit + 16-bit) - smallest table (~258 KiB) but slower
-tbsgs_k = ["pollard-kangaroo/tbsgs_k_table32"]
-bsgs_k = ["pollard-kangaroo/bsgs_k_table32"]
-bsgs = ["pollard-kangaroo/bsgs_table32"]
-bl12 = ["pollard-kangaroo/bl12_table32"]
+tbsgs_k = ["ristretto255-dlog/tbsgs_k_table32"]
+bsgs_k = ["ristretto255-dlog/bsgs_k_table32"]
+bsgs = ["ristretto255-dlog/bsgs_table32"]
+bl12 = ["ristretto255-dlog/bl12_table32"]
 
 [dependencies]
 # Shared elliptic curve library (used by both discrete log and range proofs)
@@ -36,7 +36,7 @@ once_cell = "1.10.0"
 clear_on_drop = { version = "0.2.5", features = ["no_cc"] }
 
 # Discrete log
-pollard-kangaroo = { path = "../../pollard-kangaroo", default-features = false }
+ristretto255-dlog = { path = "../../ristretto255-dlog", default-features = false }
 
 [dev-dependencies]
 # bulletproofs v4.0.0 for cross-version compatibility testing

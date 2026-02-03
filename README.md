@@ -75,6 +75,6 @@ The discrete log algorithm can be changed via Cargo features in `unified/Cargo.t
 # Run cross-version compatibility tests
 cd unified && cargo test
 
-# Run all tests including pollard-kangaroo
+# Run all tests including ristretto255-dlog
 cargo test --workspace
 ```

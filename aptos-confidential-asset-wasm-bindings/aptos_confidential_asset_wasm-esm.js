@@ -71,46 +71,11 @@ function passArray8ToWasm0(arg, malloc) {
     return ptr;
 }
 
-function passArrayJsValueToWasm0(array, malloc) {
-    const ptr = malloc(array.length * 4, 4) >>> 0;
-    for (let i = 0; i < array.length; i++) {
-        const add = addToExternrefTable0(array[i]);
-        getDataViewMemory0().setUint32(ptr + 4 * i, add, true);
-    }
-    WASM_VECTOR_LEN = array.length;
-    return ptr;
-}
-
 function takeFromExternrefTable0(idx) {
     const value = wasm.__wbindgen_export_2.get(idx);
     wasm.__externref_table_dealloc(idx);
     return value;
 }
-/**
- * Verify a batch range proof.
- * @param {Uint8Array} proof
- * @param {Uint8Array[]} comms
- * @param {Uint8Array} val_base
- * @param {Uint8Array} rand_base
- * @param {number} num_bits
- * @returns {boolean}
- */
-export function batch_verify_proof(proof, comms, val_base, rand_base, num_bits) {
-    const ptr0 = passArray8ToWasm0(proof, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passArrayJsValueToWasm0(comms, wasm.__wbindgen_malloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passArray8ToWasm0(val_base, wasm.__wbindgen_malloc);
-    const len2 = WASM_VECTOR_LEN;
-    const ptr3 = passArray8ToWasm0(rand_base, wasm.__wbindgen_malloc);
-    const len3 = WASM_VECTOR_LEN;
-    const ret = wasm.batch_verify_proof(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, num_bits);
-    if (ret[2]) {
-        throw takeFromExternrefTable0(ret[1]);
-    }
-    return ret[0] !== 0;
-}
-
 /**
  * Verify a single range proof.
  * @param {Uint8Array} proof
@@ -136,34 +101,38 @@ export function verify_proof(proof, comm, val_base, rand_base, num_bits) {
     return ret[0] !== 0;
 }
 
+function passArrayJsValueToWasm0(array, malloc) {
+    const ptr = malloc(array.length * 4, 4) >>> 0;
+    for (let i = 0; i < array.length; i++) {
+        const add = addToExternrefTable0(array[i]);
+        getDataViewMemory0().setUint32(ptr + 4 * i, add, true);
+    }
+    WASM_VECTOR_LEN = array.length;
+    return ptr;
+}
 /**
- * Generate a single range proof.
- *
- * # Arguments
- * * `v` - The secret value to prove is in range [0, 2^num_bits)
- * * `r` - The blinding factor (32-byte scalar)
- * * `val_base` - Value base point for Pedersen commitment (32-byte compressed point)
- * * `rand_base` - Randomness base point for Pedersen commitment (32-byte compressed point)
- * * `num_bits` - Bit length for range proof (8, 16, 32, or 64)
- * @param {bigint} v
- * @param {Uint8Array} r
+ * Verify a batch range proof.
+ * @param {Uint8Array} proof
+ * @param {Uint8Array[]} comms
  * @param {Uint8Array} val_base
  * @param {Uint8Array} rand_base
  * @param {number} num_bits
- * @returns {SingleRangeProof}
+ * @returns {boolean}
  */
-export function range_proof(v, r, val_base, rand_base, num_bits) {
-    const ptr0 = passArray8ToWasm0(r, wasm.__wbindgen_malloc);
+export function batch_verify_proof(proof, comms, val_base, rand_base, num_bits) {
+    const ptr0 = passArray8ToWasm0(proof, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passArray8ToWasm0(val_base, wasm.__wbindgen_malloc);
+    const ptr1 = passArrayJsValueToWasm0(comms, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passArray8ToWasm0(rand_base, wasm.__wbindgen_malloc);
+    const ptr2 = passArray8ToWasm0(val_base, wasm.__wbindgen_malloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.range_proof(v, ptr0, len0, ptr1, len1, ptr2, len2, num_bits);
+    const ptr3 = passArray8ToWasm0(rand_base, wasm.__wbindgen_malloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.batch_verify_proof(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, num_bits);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
-    return SingleRangeProof.__wrap(ret[0]);
+    return ret[0] !== 0;
 }
 
 let cachedBigUint64ArrayMemory0 = null;
@@ -211,6 +180,36 @@ export function batch_range_proof(v, rs, val_base, rand_base, num_bits) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return BatchRangeProof.__wrap(ret[0]);
+}
+
+/**
+ * Generate a single range proof.
+ *
+ * # Arguments
+ * * `v` - The secret value to prove is in range [0, 2^num_bits)
+ * * `r` - The blinding factor (32-byte scalar)
+ * * `val_base` - Value base point for Pedersen commitment (32-byte compressed point)
+ * * `rand_base` - Randomness base point for Pedersen commitment (32-byte compressed point)
+ * * `num_bits` - Bit length for range proof (8, 16, 32, or 64)
+ * @param {bigint} v
+ * @param {Uint8Array} r
+ * @param {Uint8Array} val_base
+ * @param {Uint8Array} rand_base
+ * @param {number} num_bits
+ * @returns {SingleRangeProof}
+ */
+export function range_proof(v, r, val_base, rand_base, num_bits) {
+    const ptr0 = passArray8ToWasm0(r, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(val_base, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ptr2 = passArray8ToWasm0(rand_base, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.range_proof(v, ptr0, len0, ptr1, len1, ptr2, len2, num_bits);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return SingleRangeProof.__wrap(ret[0]);
 }
 
 const BatchRangeProofFinalization = (typeof FinalizationRegistry === 'undefined')
