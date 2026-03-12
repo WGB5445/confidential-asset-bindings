@@ -3,6 +3,5 @@
 resolver = "2"
 
 members = [
-    "range-proofs",
-    "pollard-kangaroo",
+    "unified",
 ]
