@@ -1,8 +1,7 @@
 import { defineConfig } from 'tsdown';
 
 export default defineConfig({
-  entry: 'build/wasm/web/aptos_confidential_asset_wasm.js',
-  copy: ['build/wasm/web/aptos_confidential_asset_wasm*'],
-  format: 'cjs',
-  clean: true,
+  entry: "src/index.ts",
+  format: ["cjs", "esm"],
+  copy: ['build/wasm/aptos_confidential_asset_wasm_bg.wasm'],
 });
