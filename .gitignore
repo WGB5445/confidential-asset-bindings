@@ -6,9 +6,46 @@
 .vscode/
 jsconfig.json
 
+# Xcode
+#
+build/*
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
 # Android/IJ
 #
+.classpath
+.cxx
+.gradle
 .idea
+.project
+.settings
+local.properties
+android.iml
+android/app/libs
+android/keystores/debug.keystore
+android/build
+
+# Cocoapods
+#
+example/ios/Pods
+
+# Ruby
+example/vendor/
 
 # node.js
 #
@@ -17,8 +54,20 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 
-build/
+# Expo
+.expo/*
+
+# npm pkg
 dist/
 
 # Rust
 rust/target/
+
+# Native artifacts
+android/src/main/jniLibs/
+ios/Rust/Binaries/
+
+# Exception: wasm type stubs enable typecheck without a full build
+!build/wasm/
+build/wasm/*
+!build/wasm/aptos_confidential_asset_wasm.d.ts
