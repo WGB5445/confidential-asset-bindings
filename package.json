@@ -1,6 +1,6 @@
 {
   "name": "@aptos-labs/confidential-asset-bindings",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Bindings for Aptos confidential asset (discrete log + range proofs)",
   "main": "./dist/index.node.cjs",
   "types": "./dist/index.node.d.mts",
@@ -48,7 +48,8 @@
     "lint:fix": "biome format --write src examples",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.lib.json && tsc --noEmit -p examples/browser/tsconfig.json && tsc --noEmit -p examples/expo/tsconfig.json && tsc --noEmit -p examples/node/tsconfig.json",
     "test": "expo-module test",
-    "release": "npm run build && changeset publish"
+    "release": "npm run build && changeset publish",
+    "version": "./scripts/changeset-version.sh"
   },
   "keywords": [
     "aptos",
