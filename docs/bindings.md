@@ -85,11 +85,12 @@ See [bindings/zig/README.md](../bindings/zig/README.md).
 
 Do **not** confuse this with **`Release npm (Changesets)`** (runs on pushes to `main`): that workflow only versions/publishes the **JavaScript/npm** package. **Go / C++ / Zig** consume **`libaptos_confidential_asset_ffi`** from **GitHub Release assets**, produced by the workflow below—not from npm.
 
-Maintainers publish prebuilt static libraries via **Actions → Release native FFI binaries** (`bindings-release.yml`):
+Maintainers publish prebuilt static libraries with **`Release native FFI binaries`** (`bindings-release.yml`):
 
 1. Use the **same semver `X.Y.Z`** as npm `@aptos-labs/confidential-asset-bindings@X.Y.Z`.
-2. Run workflow with `version = X.Y.Z`; start with **`draft: true`** to inspect assets before marking the Release public.
-3. Download **`SHA256SUMS`** from the Release and verify locally:
+2. **Recommended:** create and push a **git tag** `vX.Y.Z` on the commit you want to ship (often the same commit as the npm release). Pushing `v*.*.*` **automatically** runs the workflow and attaches artifacts to a GitHub Release for that tag.
+3. **Optional:** run the workflow **manually** (`workflow_dispatch`) with `version = X.Y.Z` and **`draft: true`** first if you want a draft without tagging.
+4. Download **`SHA256SUMS`** from the Release and verify locally:
 
    ```bash
    curl -LO "https://github.com/OWNER/REPO/releases/download/vX.Y.Z/SHA256SUMS"

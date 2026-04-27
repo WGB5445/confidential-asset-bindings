@@ -118,8 +118,16 @@ If the Version PR conflicts with `main`, rebase or merge `main` into it and wait
 Go / C++ / Zig consumers download **prebuilt `libaptos_confidential_asset_ffi`** from GitHub Releases (not npm).
 
 1. After npm publish succeeds, note the released version `X.Y.Z`.
-2. Run **Actions → Release native FFI binaries** (`bindings-release.yml`) with `version: X.Y.Z` (no leading `v`).
-3. Prefer **`draft: true`** first; verify archives + `SHA256SUMS`, then publish the Release from the GitHub UI.
+2. **Tag the same commit** (or the commit you intend to ship) and push:
+
+   ```bash
+   git tag -a "vX.Y.Z" -m "FFI release vX.Y.Z"
+   git push origin "refs/tags/vX.Y.Z"
+   ```
+
+   Pushing tag **`vX.Y.Z`** (pattern `v*.*.*`) runs **Release native FFI binaries** and uploads archives + `SHA256SUMS` to a GitHub Release for that tag.
+
+3. **Alternatively**, run **Actions → Release native FFI binaries** manually with `version: X.Y.Z` (no leading `v`) and **`draft: true`** if you want a draft without creating a tag first.
 
 See [Native bindings](../bindings.md) for checksum verification.
 

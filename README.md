@@ -91,7 +91,7 @@ There are **two** automated paths:
 | Deliverable | Workflow (GitHub Actions tab) |
 |---------------|-------------------------------|
 | **`@aptos-labs/confidential-asset-bindings` on npm** | **Release npm (Changesets)** — runs when `main` changes (Changesets opens a Version PR or publishes). |
-| **Native FFI** (`*.a` / `*.lib` + `aptos_confidential_asset.h`) | **Release native FFI binaries** — run **manually** (`workflow_dispatch`); assets attach to a **GitHub Release**, not npm. |
+| **Native FFI** (`*.a` / `*.lib` + `aptos_confidential_asset.h`) | **Release native FFI binaries** — triggers on **`git push` of tag `vX.Y.Z`** (e.g. after npm publish). Optional **manual** run for drafts / fork testing. Assets: **GitHub Release**, not npm. |
 
 Details: [Native bindings](docs/bindings.md) (build + FFI release checklist).
 

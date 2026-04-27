@@ -45,7 +45,7 @@ If you still see `GitHub Actions is not permitted to create or approve pull requ
 
 For **`npm publish`**, add your own **`NPM_TOKEN`** on the fork if you publish outside the `@aptos-labs` scope.
 
-To **release native FFI artifacts** (static libraries for Go/C++/Zig), use **Actions → Release native FFI binaries** — not the npm Changesets workflow. See [docs/bindings.md](docs/bindings.md#releases-ffi-binaries).
+To **release native FFI artifacts** (static libraries for Go/C++/Zig), push git tag **`vX.Y.Z`** (`v*.*.*`) on the release commit — **`Release native FFI binaries`** runs automatically. You can still run that workflow manually for drafts. This is separate from **`Release npm (Changesets)`**. See [docs/bindings.md](docs/bindings.md#releases-ffi-binaries).
 
 ## Build commands
 

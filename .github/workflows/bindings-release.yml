@@ -1,20 +1,29 @@
 # Native staticlib + header — NOT npm. Separate from "Release npm (Changesets)".
 name: Release native FFI binaries
 
-# Manual workflow_dispatch: cross-compile aptos_confidential_asset_ffi, attach tarballs/zips + SHA256SUMS to a GitHub Release.
-# Align `version` with npm (@aptos-labs/confidential-asset-bindings) — use the same X.Y.Z as package.json after publish.
+# Preferred: push an annotated tag `vMAJOR.MINOR.PATCH` (same scheme as npm / git tags).
+# Optional: workflow_dispatch for dry-runs / forks without tagging.
+# Align semver with npm `@aptos-labs/confidential-asset-bindings@X.Y.Z` when publishing both.
 
 on:
+  push:
+    tags:
+      # Semver tags: v1.2.3, v1.2.3-rc.1, … (align with npm @aptos-labs/confidential-asset-bindings)
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version (semver without leading v), must match npm for this drop"
+        description: "Semver X.Y.Z without leading v (manual only; prefer git tag vX.Y.Z)"
         required: true
         default: "1.0.0"
       draft:
-        description: "Create GitHub Release as draft (recommended first)"
+        description: "Create GitHub Release as draft (manual runs)"
         type: boolean
         default: true
+
+concurrency:
+  group: ffi-release-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -103,6 +112,23 @@ jobs:
       - name: Check out (notes / attribution)
         uses: actions/checkout@v4
 
+      - name: Resolve release tag and version
+        id: rel
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VER="${{ inputs.version }}"
+            echo "tag=v${VER}" >> "$GITHUB_OUTPUT"
+            echo "ver=${VER}" >> "$GITHUB_OUTPUT"
+            echo "draft=${{ inputs.draft }}" >> "$GITHUB_OUTPUT"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            VER="${TAG#v}"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "ver=${VER}" >> "$GITHUB_OUTPUT"
+            echo "draft=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Download all FFI artifacts
         uses: actions/download-artifact@v4
         with:
@@ -125,14 +151,14 @@ jobs:
       - name: Create GitHub Release with assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ inputs.version }}
-          name: aptos_confidential_asset_ffi v${{ inputs.version }}
-          draft: ${{ inputs.draft }}
+          tag_name: ${{ steps.rel.outputs.tag }}
+          name: aptos_confidential_asset_ffi ${{ steps.rel.outputs.tag }}
+          draft: ${{ steps.rel.outputs.draft == 'true' }}
           generate_release_notes: true
           body: |
             Native FFI static libraries for `aptos_confidential_asset_ffi` (C ABI).
 
-            **Align this version with npm:** `@aptos-labs/confidential-asset-bindings@${{ inputs.version }}`
+            **Git tag:** `${{ steps.rel.outputs.tag }}` — align with npm **`@aptos-labs/confidential-asset-bindings@${{ steps.rel.outputs.ver }}`** when shipping both.
 
             Includes `SHA256SUMS` for all attached archives. Header: `aptos_confidential_asset.h` inside each archive.
 
