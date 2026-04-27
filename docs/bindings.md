@@ -83,7 +83,9 @@ See [bindings/zig/README.md](../bindings/zig/README.md).
 
 ## Releases (FFI binaries)
 
-Maintainers publish prebuilt static libraries via **Actions → Bindings release artifacts**:
+Do **not** confuse this with **`Release npm (Changesets)`** (runs on pushes to `main`): that workflow only versions/publishes the **JavaScript/npm** package. **Go / C++ / Zig** consume **`libaptos_confidential_asset_ffi`** from **GitHub Release assets**, produced by the workflow below—not from npm.
+
+Maintainers publish prebuilt static libraries via **Actions → Release native FFI binaries** (`bindings-release.yml`):
 
 1. Use the **same semver `X.Y.Z`** as npm `@aptos-labs/confidential-asset-bindings@X.Y.Z`.
 2. Run workflow with `version = X.Y.Z`; start with **`draft: true`** to inspect assets before marking the Release public.
@@ -99,7 +101,7 @@ Cross-compilation uses `rust/target/<triple>/release/`; in GitHub Actions the wo
 
 ## Platform matrix (prebuilt artifacts)
 
-The **Bindings release artifacts** workflow cross-builds tier-1 triples (linux gnu/musl x86_64, darwin x86_64/arm64, windows x86_64 MSVC) and uploads them to a GitHub Release. The repository **does not** commit `.a` / `.lib` binaries; consumers download release assets or build from source.
+The **Release native FFI binaries** workflow cross-builds tier-1 triples (linux gnu/musl x86_64, darwin x86_64/arm64, windows x86_64 MSVC) and uploads them to a GitHub Release. The repository **does not** commit `.a` / `.lib` binaries; consumers download release assets or build from source.
 
 ## cbindgen (optional)
 

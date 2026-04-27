@@ -45,18 +45,20 @@ This creates a Markdown file under `.changeset/`. Commit it alongside your code 
 - Test-only changes (no production code modified)
 - Internal refactors with no observable behaviour change — though add a changeset if you are unsure
 
-## Release workflow
+## npm release workflow (`Release npm (Changesets)`)
+
+This is **only** the JS/npm package — it does **not** upload native FFI archives.
 
 1. **Add a changeset** during your feature or fix branch (see above).
 2. **Open a pull request** to `main`. CI must pass.
-3. **Merge the PR.** The `release.yml` workflow runs on push to `main`.
+3. **Merge the PR.** **`Release npm (Changesets)`** (`release.yml`) runs on push to `main`.
 4. **Changesets action evaluates pending changesets:**
    - If there are pending changesets, it opens or updates a pull request titled "Version Packages". This PR bumps version numbers and updates `CHANGELOG.md`.
    - If there are no pending changesets, nothing happens.
 5. **Review and merge the "Version Packages" PR** when you are ready to publish. CI runs again.
 6. **On merge, `changesets/action` publishes to npm** by running `npm run release`. The package appears on the npm registry under `@aptos-labs/confidential-asset-bindings`.
 
-## Release workflow token (`release.yml`)
+## Release workflow token (`release.yml`, npm only)
 
 The workflow uses the default **`GITHUB_TOKEN`** from GitHub Actions (`permissions: contents: write` and `pull-requests: write`) for `changesets/action` (open/update "Version Packages" PRs). **No** `actions/create-github-app-token` or org-level bot secrets are required; that was only for the upstream Aptos Labs GitHub App. For **npm publish**, add an **`NPM_TOKEN`** repository secret with permission to publish the package scope (see your registry’s docs).
 
@@ -116,7 +118,7 @@ If the Version PR conflicts with `main`, rebase or merge `main` into it and wait
 Go / C++ / Zig consumers download **prebuilt `libaptos_confidential_asset_ffi`** from GitHub Releases (not npm).
 
 1. After npm publish succeeds, note the released version `X.Y.Z`.
-2. Run **Actions → Bindings release artifacts** (`bindings-release.yml`) with `version: X.Y.Z` (no leading `v`).
+2. Run **Actions → Release native FFI binaries** (`bindings-release.yml`) with `version: X.Y.Z` (no leading `v`).
 3. Prefer **`draft: true`** first; verify archives + `SHA256SUMS`, then publish the Release from the GitHub UI.
 
 See [Native bindings](../bindings.md) for checksum verification.

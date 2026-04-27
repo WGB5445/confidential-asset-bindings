@@ -84,6 +84,17 @@ npm run build:ios       # iOS xcframework
 npm run build:lib       # JS/TS bundle (requires pre-built WASM)
 ```
 
+## Releases
+
+There are **two** automated paths:
+
+| Deliverable | Workflow (GitHub Actions tab) |
+|---------------|-------------------------------|
+| **`@aptos-labs/confidential-asset-bindings` on npm** | **Release npm (Changesets)** — runs when `main` changes (Changesets opens a Version PR or publishes). |
+| **Native FFI** (`*.a` / `*.lib` + `aptos_confidential_asset.h`) | **Release native FFI binaries** — run **manually** (`workflow_dispatch`); assets attach to a **GitHub Release**, not npm. |
+
+Details: [Native bindings](docs/bindings.md) (build + FFI release checklist).
+
 ## Links
 
 - [Native bindings (Go / Python / C++ / Zig)](docs/bindings.md)

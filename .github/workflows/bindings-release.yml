@@ -1,6 +1,7 @@
-name: Bindings release artifacts
+# Native staticlib + header — NOT npm. Separate from "Release npm (Changesets)".
+name: Release native FFI binaries
 
-# Manual workflow: cross-compile aptos_confidential_asset_ffi, attach tarballs/zips + SHA256SUMS to a GitHub Release.
+# Manual workflow_dispatch: cross-compile aptos_confidential_asset_ffi, attach tarballs/zips + SHA256SUMS to a GitHub Release.
 # Align `version` with npm (@aptos-labs/confidential-asset-bindings) — use the same X.Y.Z as package.json after publish.
 
 on:

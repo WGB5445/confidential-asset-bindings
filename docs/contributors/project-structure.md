@@ -65,8 +65,9 @@ confidential-asset-bindings/
 ├── .changeset/                  # Changesets config + pending changeset files
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml               # lint+typecheck, test-rust, test-js, build jobs
-│       └── release.yml          # changesets/action — creates Version PR or publishes to npm
+│       ├── ci.yml               # lint+typecheck, test-rust, test-js, build jobs (+ bindings smoke)
+│       ├── release.yml          # "Release npm (Changesets)" — Version PR / npm publish only
+│       └── bindings-release.yml # "Release native FFI binaries" — manual GitHub Release of static libs
 │
 ├── biome.json                   # Biome linter/formatter config
 ├── tsconfig.json                # Root TypeScript config

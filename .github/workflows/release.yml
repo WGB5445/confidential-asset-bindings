@@ -1,4 +1,6 @@
-name: Release
+# npm / JS package only — opens "Version Packages" PR or publishes via Changesets.
+# Native FFI binaries use workflow "Release native FFI binaries" (bindings-release.yml).
+name: Release npm (Changesets)
 
 on:
   push:
