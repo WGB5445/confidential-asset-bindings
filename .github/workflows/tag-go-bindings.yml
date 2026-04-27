@@ -1,0 +1,39 @@
+# Create an annotated git tag so proxy.golang.org can serve
+# module github.com/aptos-labs/confidential-asset-bindings/bindings/go
+# Tag format MUST be: bindings/go/vMAJOR.MINOR.PATCH (Go module subdirectory versioning).
+name: Tag Go bindings module
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Full tag, e.g. bindings/go/v0.1.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag prefix
+        run: |
+          T="${{ inputs.tag }}"
+          if [[ ! "$T" =~ ^bindings/go/v[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "::error::Tag must match ^bindings/go/vX.Y.Z (optional pre-release suffix)"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG for bindings/go"
+          git push origin "refs/tags/$TAG"

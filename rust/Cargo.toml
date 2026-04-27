@@ -4,6 +4,8 @@ resolver = "2"
 
 members = [
     "core",
+    "ffi",
     "mobile",
+    "python",
     "wasm",
 ]

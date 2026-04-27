@@ -1,0 +1,142 @@
+name: Bindings release artifacts
+
+# Manual workflow: cross-compile aptos_confidential_asset_ffi, attach tarballs/zips + SHA256SUMS to a GitHub Release.
+# Align `version` with npm (@aptos-labs/confidential-asset-bindings) — use the same X.Y.Z as package.json after publish.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (semver without leading v), must match npm for this drop"
+        required: true
+        default: "1.0.0"
+      draft:
+        description: "Create GitHub Release as draft (recommended first)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-ffi-matrix:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v4
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust -> target"
+          key: ffi-${{ matrix.target }}
+
+      - name: Install musl tools (Linux musl)
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: rustup target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: cargo build
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+        run: cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml --target ${{ matrix.target }}
+
+      - name: Stage artifact (Unix)
+        if: ${{ runner.os != 'Windows' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          T="${{ matrix.target }}"
+          OUT="dist/${T}"
+          mkdir -p "$OUT"
+          cp rust/ffi/include/aptos_confidential_asset.h "$OUT/"
+          cp "rust/target/${T}/release/libaptos_confidential_asset_ffi.a" "$OUT/"
+          (cd dist && tar czf "aptos_confidential_asset_ffi-${T}.tar.gz" "${T}")
+
+      - name: Stage artifact (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        shell: pwsh
+        run: |
+          $t = "${{ matrix.target }}"
+          $out = "dist/$t"
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item rust/ffi/include/aptos_confidential_asset.h $out/
+          Copy-Item "rust/target/$t/release/aptos_confidential_asset_ffi.lib" $out/
+          Compress-Archive -Path $out -DestinationPath "dist/aptos_confidential_asset_ffi-$t.zip" -Force
+
+      - name: Upload tarball (Unix)
+        if: ${{ runner.os != 'Windows' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffi-${{ matrix.target }}
+          path: dist/aptos_confidential_asset_ffi-${{ matrix.target }}.tar.gz
+
+      - name: Upload zip (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffi-${{ matrix.target }}
+          path: dist/aptos_confidential_asset_ffi-${{ matrix.target }}.zip
+
+  aggregate-and-release:
+    name: Aggregate checksums + GitHub Release
+    needs: build-ffi-matrix
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out (notes / attribution)
+        uses: actions/checkout@v4
+
+      - name: Download all FFI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ffi-*
+          merge-multiple: true
+          path: release-files
+
+      - name: Write SHA256SUMS
+        run: |
+          set -euo pipefail
+          cd release-files
+          rm -f SHA256SUMS
+          shopt -s nullglob
+          for f in *.tar.gz *.zip; do
+            sha256sum "$f" >> SHA256SUMS
+          done
+          echo "--- SHA256SUMS ---"
+          cat SHA256SUMS
+
+      - name: Create GitHub Release with assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version }}
+          name: aptos_confidential_asset_ffi v${{ inputs.version }}
+          draft: ${{ inputs.draft }}
+          generate_release_notes: true
+          body: |
+            Native FFI static libraries for `aptos_confidential_asset_ffi` (C ABI).
+
+            **Align this version with npm:** `@aptos-labs/confidential-asset-bindings@${{ inputs.version }}`
+
+            Includes `SHA256SUMS` for all attached archives. Header: `aptos_confidential_asset.h` inside each archive.
+
+            See [docs/bindings.md](https://github.com/${{ github.repository }}/blob/main/docs/bindings.md) for consumption (Go / C++ / Zig).
+          files: |
+            release-files/*.tar.gz
+            release-files/*.zip
+            release-files/SHA256SUMS

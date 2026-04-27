@@ -1,4 +1,4 @@
-use crate::shared::{
+use aptos_confidential_asset_ffi::shared::{
     sanitize_external_error, split_exact_chunks, validate_discrete_log_max_num_bits,
     validate_flat_buffer_len, validate_range_num_bits, RANGE_PROOF_BATCH_ELEMENT_BYTES,
 };

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
+
+[project]
+name = "aptos-confidential-asset-bindings-experimental"
+version = "0.1.0"
+description = "Python bindings for Aptos confidential asset crypto (experimental)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Aptos Labs" }]
+keywords = ["aptos", "confidential", "bulletproofs", "ristretto"]
+classifiers = [
+  "Programming Language :: Rust",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: 3",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.maturin]
+manifest-path = "../../rust/python/Cargo.toml"
+module-name = "aptos_confidential_asset._native"
+python-source = "python"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

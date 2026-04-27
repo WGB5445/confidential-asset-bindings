@@ -86,6 +86,7 @@ npm run build:lib       # JS/TS bundle (requires pre-built WASM)
 
 ## Links
 
+- [Native bindings (Go / Python / C++ / Zig)](docs/bindings.md)
 - [API Reference](docs/api.md)
 - [Examples](docs/examples.md)
 - [Advanced usage](docs/advanced.md)

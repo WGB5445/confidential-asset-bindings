@@ -18,11 +18,10 @@ This document describes the internal structure of `@aptos-labs/confidential-asse
 ├──────────────────┬──────────────────────────────────────────────┤
 │  Layer 2a: WASM  │  Layer 2b: Mobile bindings                  │
 │                  │                                              │
-│  rust/wasm/      │  rust/mobile/                               │
-│  wasm-bindgen    │  src/ffi.rs  (iOS, extern "C")              │
-│  JS class        │  src/jni.rs  (Android, JNI)                 │
-│  wrappers        │  src/abi.rs  (C-compatible structs)         │
-│                  │  src/shared.rs (validation, packing)        │
+│  rust/wasm/      │  rust/mobile/ (Android JNI)                 │
+│  wasm-bindgen    │  rust/ffi/   (C ABI: iOS + native bindings) │
+│  JS class        │  src/jni.rs  (Android)                      │
+│  wrappers        │  ffi: abi + shared + extern "C"             │
 ├──────────────────┴──────────────────────────────────────────────┤
 │  Layer 1: Rust core                                             │
 │                                                                 │
@@ -81,11 +80,11 @@ rust/core/
   └─ aptos_confidential_asset_core (lib)
         │
         ▼
-rust/mobile/
-  └─ aptos_confidential_asset_mobile (lib, crate-type = ["staticlib"])
+rust/ffi/
+  └─ aptos_confidential_asset_ffi (lib, crate-type = ["staticlib", "cdylib"])
      src/abi.rs      (repr(C) structs for all return types)
      src/shared.rs   (validation, flat-buffer pack/unpack)
-     src/ffi.rs      (#[cfg(target_os = "ios")], #[no_mangle] extern "C")
+     src/ffi.rs      (#[no_mangle] extern "C")
         │
         ▼  cargo build --target aarch64-apple-ios --release
            cargo build --target aarch64-apple-ios-sim --release
@@ -111,9 +110,8 @@ rust/core/
         │
         ▼
 rust/mobile/
-  └─ aptos_confidential_asset_mobile (lib, crate-type = ["cdylib"])
-     src/shared.rs   (validation, flat-buffer pack/unpack)
-     src/jni.rs      (#[cfg(target_os = "android")], JNI entry points)
+  └─ aptos_confidential_asset_mobile (lib, crate-type = ["cdylib"] — Android .so)
+     src/jni.rs      (JNI entry points; shared validation via aptos_confidential_asset_ffi)
         │
         ▼  cargo-ndk -t arm64-v8a -t armeabi-v7a -t x86_64 build --release
 build/android/

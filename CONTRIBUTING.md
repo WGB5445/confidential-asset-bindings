@@ -56,7 +56,7 @@ Type check:
 npm run typecheck
 ```
 
-All four checks must pass before opening a pull request.
+CI also runs native **bindings smoke** (FFI + Go + Python + C++) on Ubuntu—keep it green before opening or merging PRs (see **`Bindings (FFI + Go + Python + C++)`** in `.github/workflows/ci.yml`). Repository admins should enable this check under branch protection rules for `main`; see [`docs/contributors/releasing.md`](docs/contributors/releasing.md).
 
 ## Coding standards
 

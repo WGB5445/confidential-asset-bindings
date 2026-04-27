@@ -8,6 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 aptos_confidential_asset_core = { path = "../core" }
+aptos_confidential_asset_ffi = { path = "../ffi" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 jni = { version = "0.21", default-features = false }

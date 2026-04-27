@@ -1,0 +1,53 @@
+# Experimental: build manylinux-compatible wheels locally on Ubuntu CI.
+# Publish requires PyPI Trusted Publisher (OIDC) or PYPI_API_TOKEN — see docs/contributors/releasing.md
+name: Publish Python bindings
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_to_pypi:
+        description: "Upload wheels to PyPI (requires OIDC or PYPI_API_TOKEN)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  maturin:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: jdx/mise-action@v4
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust -> target"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install maturin
+        run: pip install maturin
+
+      - name: Build wheel
+        run: cd bindings/python && maturin build --release -o dist
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-wheels
+          path: bindings/python/dist/*.whl
+
+      - name: Publish to PyPI
+        if: ${{ inputs.publish_to_pypi }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: bindings/python/dist/
+          # Trusted Publisher: configure repository + this workflow on PyPI for OIDC.
+          # Otherwise set repository secret PYPI_API_TOKEN for classic tokens.
