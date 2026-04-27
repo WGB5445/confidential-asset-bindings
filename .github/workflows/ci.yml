@@ -133,12 +133,13 @@ jobs:
 
       - name: Python maturin + pytest
         run: |
+          cd bindings/python
+          python -m venv .venv
+          . .venv/bin/activate
           python -m pip install --upgrade pip
           pip install maturin pytest
-          cd bindings/python
           maturin develop --release
-          cd ../..
-          pytest bindings/python/tests -v
+          pytest tests -v
 
       - name: C++ example
         run: |
