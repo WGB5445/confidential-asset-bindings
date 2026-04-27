@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, "feature/**"]
   pull_request:
     branches: [main]
 
@@ -95,3 +95,91 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  bindings-smoke:
+    name: Bindings (FFI + Go + Python + C++)
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Setup tools
+        uses: jdx/mise-action@v4
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust -> target"
+
+      - name: Build FFI staticlib
+        run: cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Go bindings (golden + smoke)
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          cd bindings/go
+          go test -v ./aptosconfidential/...
+          cd ../../examples/go
+          go test -v .
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python maturin + pytest
+        run: |
+          cd bindings/python
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install maturin pytest
+          maturin develop --release
+          pytest tests -v
+
+      - name: C++ example
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake
+          cd examples/cpp
+          cmake -B build -S .
+          cmake --build build
+          ./build/demo
+
+  zig-smoke:
+    name: Bindings (Zig smoke)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      - name: Setup tools
+        uses: jdx/mise-action@v4
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust -> target"
+
+      - name: Install Zig
+        run: |
+          ZIG_VER=0.13.0
+          curl -sSL "https://ziglang.org/download/${ZIG_VER}/zig-linux-x86_64-${ZIG_VER}.tar.xz" | tar -xJ
+          echo "$PWD/zig-linux-x86_64-${ZIG_VER}" >> "$GITHUB_PATH"
+
+      - name: Build FFI + Zig
+        run: |
+          cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
+          cd bindings/zig
+          zig build

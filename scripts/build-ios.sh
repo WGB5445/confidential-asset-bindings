@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUST_DIR="$ROOT_DIR/rust"
-CRATE="aptos_confidential_asset_mobile"
+CRATE="aptos_confidential_asset_ffi"
 LIB="lib${CRATE}.a"
 HEADERS_DIR="$ROOT_DIR/ios/Rust/Headers"
 OUTPUT_DIR="$ROOT_DIR/ios/Rust/Binaries"

@@ -87,8 +87,54 @@ After the "Version Packages" PR is merged and the publish step completes:
 
 Before merging a "Version Packages" PR, confirm the following:
 
-- [ ] All CI jobs pass on `main` (lint, typecheck, test-rust, test-js, build).
+- [ ] All CI jobs pass on `main` (**including** `Bindings (FFI + Go + Python + C++)`; see `.github/workflows/ci.yml`).
 - [ ] Cross-version compatibility tests pass (`rust/core/tests/cross_version_compat.rs`). This is mandatory if any change touched `rust/core/src/range_proof.rs`.
 - [ ] The examples (browser, node, expo) work against the current build.
 - [ ] `CHANGELOG.md` in the "Version Packages" PR accurately describes the release.
 - [ ] If this is a major release, the Aptos network team has been notified of any proof format or DST changes that affect the on-chain verifier.
+
+## Branch protection (recommended)
+
+On `main`, require status checks to pass before merge, including at minimum:
+
+- `Lint & Typecheck`, `Test JS`, `Test Rust`, `Build`
+- **`Bindings (FFI + Go + Python + C++)`**
+
+This prevents merging native-binding regressions when only the JS/Rust subset was watched.
+
+## Merge order (avoid PR surprises)
+
+1. **Feature PR** → includes `.changeset/*.md` when user-visible behaviour changes.
+2. Merge to `main` → CI runs (including bindings).
+3. **Version Packages PR** (opened by Changesets bot if changesets exist) → review version bump + `CHANGELOG.md`.
+4. Merge Version PR → `release.yml` publishes **npm**.
+
+If the Version PR conflicts with `main`, rebase or merge `main` into it and wait for CI again before merging.
+
+## Native FFI GitHub Release (after npm)
+
+Go / C++ / Zig consumers download **prebuilt `libaptos_confidential_asset_ffi`** from GitHub Releases (not npm).
+
+1. After npm publish succeeds, note the released version `X.Y.Z`.
+2. Run **Actions → Bindings release artifacts** (`bindings-release.yml`) with `version: X.Y.Z` (no leading `v`).
+3. Prefer **`draft: true`** first; verify archives + `SHA256SUMS`, then publish the Release from the GitHub UI.
+
+See [Native bindings](../bindings.md) for checksum verification.
+
+## Rollback guidance
+
+- **npm**: Prefer a forward-fix **patch** release (`npm version patch` via Changesets). Avoid unpublishing except emergencies.
+- **GitHub FFI Release**: Edit or delete the draft/pre-release; publish a corrected workflow run with a higher patch if binaries were wrong.
+- **Git tags**: Do not rewrite public tags consumers may have fetched; release a new patch tag + npm version instead.
+
+## Development note: `CARGO_TARGET_DIR`
+
+Some environments set a global `CARGO_TARGET_DIR`, which hides build outputs under `rust/target/` (breaking Go cgo paths). From the repo root use [`scripts/build-ffi-for-bindings.sh`](/scripts/build-ffi-for-bindings.sh) or `unset CARGO_TARGET_DIR` before `cargo build`, as documented in [`docs/bindings.md`](../bindings.md).
+
+## Python (experimental PyPI)
+
+Optional automation: `.github/workflows/publish-python.yml` (**workflow_dispatch**). Configure PyPI **Trusted Publisher** (OIDC) for this repository + workflow, or provide `PYPI_API_TOKEN` secret for classic publishing.
+
+## Go module tags (optional)
+
+For `proxy.golang.org` to resolve `github.com/aptos-labs/confidential-asset-bindings/bindings/go`, create a tag of the form **`bindings/go/vX.Y.Z`** at the commit you want consumers to pin. Use `.github/workflows/tag-go-bindings.yml` or tag locally—see workflow instructions.

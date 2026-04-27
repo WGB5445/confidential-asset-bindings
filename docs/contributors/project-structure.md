@@ -5,7 +5,7 @@
 ```
 confidential-asset-bindings/
 ├── rust/                        # All Rust source code (Cargo workspace)
-│   ├── Cargo.toml               # Workspace root — declares the three member crates
+│   ├── Cargo.toml               # Workspace root — declares member crates (core, ffi, mobile, wasm, python)
 │   ├── core/                    # Pure crypto library; no platform dependencies
 │   │   ├── Cargo.toml           # crate: aptos_confidential_asset_core
 │   │   └── src/
@@ -20,14 +20,16 @@ confidential-asset-bindings/
 │   │       ├── lib.rs           # WASM init + panic hook
 │   │       ├── discrete_log.rs  # wasm-bindgen wrapper for DiscreteLogSolver
 │   │       └── range_proof.rs   # wasm-bindgen wrappers for batch_range_proof/batch_verify_proof
-│   └── mobile/                  # iOS and Android platform wrapper
+│   ├── ffi/                     # C ABI (staticlib/cdylib) for Go/C++/Zig + iOS xcframework
+│   │   ├── Cargo.toml           # crate: aptos_confidential_asset_ffi
+│   │   ├── include/             # aptos_confidential_asset.h (canonical C header)
+│   │   └── src/                 # abi.rs, shared.rs, ffi.rs (#[no_mangle] extern "C")
+│   ├── python/                  # PyO3 extension crate (maturin entry under bindings/python)
+│   └── mobile/                  # Android JNI (iOS links ffi staticlib via build-ios.sh)
 │       ├── Cargo.toml           # crate: aptos_confidential_asset_mobile
 │       └── src/
-│           ├── lib.rs           # Platform cfg gates (routes to iOS or Android code)
-│           ├── shared.rs        # Validation helpers and flat-buffer utilities (shared by both platforms)
-│           ├── abi.rs           # iOS only: C-compatible result structs (#[repr(C)])
-│           ├── ffi.rs           # iOS only: extern "C" #[no_mangle] entry points
-│           └── jni.rs           # Android only: JNI entry points
+│           ├── lib.rs           # Android: jni module only
+│           └── jni.rs           # JNI entry points (uses aptos_confidential_asset_ffi::shared)
 │
 ├── src/                         # TypeScript library source
 │   ├── index.ts                 # Web/Node.js entry — loads WASM and exports public API
@@ -78,7 +80,7 @@ confidential-asset-bindings/
 └── CONTRIBUTING.md
 ```
 
-## The three Rust crates
+## Rust crates (workspace)
 
 ### `aptos_confidential_asset_core` (`rust/core`)
 
@@ -98,15 +100,16 @@ A thin wasm-bindgen wrapper around `core`. It:
 
 Built by `scripts/build-wasm.sh` using `wasm-pack`.
 
+### `aptos_confidential_asset_ffi` (`rust/ffi`)
+
+C ABI (`staticlib` / `cdylib`) around `core`. Used for:
+
+- iOS XCFramework (`scripts/build-ios.sh` builds this crate for device + simulator).
+- Native bindings (Go, C++, Zig) — see [docs/bindings.md](../../docs/bindings.md).
+
 ### `aptos_confidential_asset_mobile` (`rust/mobile`)
 
-Platform wrappers for iOS and Android. Responsibilities:
-
-- `shared.rs` — input validation and flat-buffer utilities used by both platforms.
-- `abi.rs` + `ffi.rs` (iOS) — `#[repr(C)]` result types and `extern "C" #[no_mangle]` functions that are called through the C FFI layer exposed via the XCFramework headers.
-- `jni.rs` (Android) — JNI entry points called by the Expo native module on Android.
-
-The iOS and Android code is guarded by `cfg` attributes in `lib.rs` so only the relevant platform code is compiled for each target.
+Android-only JNI wrapper (`cdylib`) that calls into `core` and reuses validation helpers from `aptos_confidential_asset_ffi::shared`. iOS does **not** compile this crate for the static archive; it uses `ffi` directly.
 
 ## TypeScript source (`src/`)
 
