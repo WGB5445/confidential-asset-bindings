@@ -44,6 +44,13 @@ cargo build -p aptos_confidential_asset_ffi --release --target aarch64-unknown-l
 
 Discrete-log **algorithm** is chosen at Rust compile time via Cargo features on `core` / `ffi` (`tbsgs_k` default). Go/Python in this repo follow that default.
 
+### Cross-binding parity (what we can guarantee)
+
+- **Single implementation:** Python (PyO3), the C ABI (`rust/ffi`), and WASM/JS paths all call **`aptos_confidential_asset_core`** — there is no second copy of the Bulletproofs/discrete-log logic in Go/C++/Zig (those languages call the same Rust static library).
+- **You cannot prove “byte-identical proofs” across two `prove` calls:** Bulletproofs generation uses internal randomness; the same inputs may yield different valid `proof` bytes. Parity checks focus on **verification** and **round-trip** (`prove` → `verify`).
+- **Shared golden fixture:** [`tests/fixtures/golden_batch_range_proof.json`](../tests/fixtures/golden_batch_range_proof.json) holds canonical inputs plus one sample `proof`/`comms_flat`. Tests: [`rust/core/tests/binding_golden_fixture.rs`](../rust/core/tests/binding_golden_fixture.rs), [`bindings/python/tests/test_golden_fixture.py`](../bindings/python/tests/test_golden_fixture.py), [`bindings/go/aptosconfidential/golden_test.go`](../bindings/go/aptosconfidential/golden_test.go). Regenerate canonical proof/comms: `cargo run --manifest-path rust/Cargo.toml --example emit_binding_golden_vector -p aptos_confidential_asset_core`.
+- **Local orchestration:** [`scripts/check-binding-parity.sh`](../scripts/check-binding-parity.sh) runs Rust + Python + Go golden checks (requires `maturin develop` in `bindings/python` for pytest, and `libaptos_confidential_asset_ffi.a` for cgo).
+
 ## Go
 
 See [bindings/go/README.md](../bindings/go/README.md) and [examples/go/README.md](../examples/go/README.md).

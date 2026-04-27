@@ -38,6 +38,8 @@ dependencies = [
  "once_cell",
  "rand",
  "ristretto255-dlog",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

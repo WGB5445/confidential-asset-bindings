@@ -63,15 +63,31 @@ fn batch_verify_proof_py(
     num_bits: usize,
     comm_count: Option<usize>,
 ) -> PyResult<bool> {
-    let count = comm_count.unwrap_or(comms_flat.len() / 32);
-    let comms: Vec<Vec<u8>> = comms_flat
-        .chunks_exact(32)
-        .take(count)
-        .map(|c| c.to_vec())
-        .collect();
-    if comms.len() != count {
-        return Err(pyerr("comms_flat length must be comm_count * 32"));
-    }
+    let count = match comm_count {
+        Some(c) => {
+            let expected = c.checked_mul(32).ok_or_else(|| pyerr("comm_count is too large"))?;
+            if comms_flat.len() != expected {
+                return Err(pyerr(format!(
+                    "comms_flat must be exactly comm_count * 32 = {} bytes, got {}",
+                    expected,
+                    comms_flat.len()
+                )));
+            }
+            c
+        }
+        None => {
+            if comms_flat.len() % 32 != 0 {
+                return Err(pyerr(format!(
+                    "comms_flat length must be a multiple of 32 when comm_count is omitted (got {})",
+                    comms_flat.len()
+                )));
+            }
+            comms_flat.len() / 32
+        }
+    };
+
+    let comms: Vec<Vec<u8>> = comms_flat.chunks_exact(32).map(|c| c.to_vec()).collect();
+    debug_assert_eq!(comms.len(), count);
     core_batch_verify_proof(
         proof.to_vec(),
         comms,
