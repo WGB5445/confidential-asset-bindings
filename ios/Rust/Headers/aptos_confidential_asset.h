@@ -10,6 +10,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   uint8_t *ptr;
   size_t len;
@@ -56,5 +60,9 @@ ConfidentialAssetBytesResult confidential_asset_solver_solve(
     void *ptr,
     const uint8_t *y_ptr, size_t y_len,
     uint8_t max_num_bits);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* APTOS_CONFIDENTIAL_ASSET_H */
