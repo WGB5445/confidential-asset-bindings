@@ -18,18 +18,10 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Authenticate as Aptos Labs Bot
-        uses: actions/create-github-app-token@v3
-        id: aptos-labs-bot-auth
-        with:
-          app-id: ${{ vars.APTOS_LABS_BOT_APP_ID }}
-          private-key: ${{ secrets.APTOS_LABS_BOT_APP_PRIVATE_KEY }}
-
       - name: Check out code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ steps.aptos-labs-bot-auth.outputs.token }}
 
       - name: Setup tools
         uses: jdx/mise-action@v4
@@ -51,4 +43,4 @@ jobs:
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
-          GITHUB_TOKEN: ${{ steps.aptos-labs-bot-auth.outputs.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
