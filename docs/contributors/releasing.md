@@ -56,9 +56,9 @@ This creates a Markdown file under `.changeset/`. Commit it alongside your code 
 5. **Review and merge the "Version Packages" PR** when you are ready to publish. CI runs again.
 6. **On merge, `changesets/action` publishes to npm** by running `npm run release`. The package appears on the npm registry under `@aptos-labs/confidential-asset-bindings`.
 
-## GitHub App bot
+## Release workflow token (`release.yml`)
 
-The release workflow authenticates to GitHub using the Aptos Labs Bot GitHub App. The app provides a token with permission to create and merge PRs on the repository. You do not need to configure this manually; it is set up in `release.yml`.
+The workflow uses the default **`GITHUB_TOKEN`** from GitHub Actions (`permissions: contents: write` and `pull-requests: write`) for `changesets/action` (open/update "Version Packages" PRs). **No** `actions/create-github-app-token` or org-level bot secrets are required; that was only for the upstream Aptos Labs GitHub App. For **npm publish**, add an **`NPM_TOKEN`** repository secret with permission to publish the package scope (see your registry’s docs).
 
 ## Verifying a release
 
