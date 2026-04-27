@@ -1,5 +1,11 @@
 # @aptos-labs/confidential-asset-bindings
 
+## 1.2.0
+
+### Minor Changes
+
+- 2443b65: Add native FFI crate (`rust/ffi`), Go/Python/C++/Zig bindings and examples, consolidated bindings CI smoke jobs, and FFI release workflows.
+
 ## 1.1.1
 
 ### Patch Changes
