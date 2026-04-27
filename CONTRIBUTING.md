@@ -36,7 +36,7 @@ git push origin main
 
 GitHub Actions workflows run **in the repository where they execute**—on a fork, Releases / manual workflows use **that fork’s** permissions and secrets (not Aptos Labs org secrets). Adjust remotes locally so `git pull`/`git push` target your fork (`origin`) as you prefer.
 
-The **`Release`** workflow (Changesets → npm) does **not** run on forked repositories (`release.yml` skips when `repository.fork` is true), because `changesets/action` must create a pull request and GitHub denies that for the default token on forks unless you enable **Settings → Actions → General → Workflow permissions → Read and write** and **Allow GitHub Actions to create and approve pull requests**. Releases for `@aptos-labs/confidential-asset-bindings` run on the upstream repo after merge.
+To **test Changesets / Release on your fork**, `changesets/action` must open PRs using `GITHUB_TOKEN`. Enable **Settings → Actions → General → Workflow permissions → Read and write**, and turn on **Allow GitHub Actions to create and approve pull requests**. Without that, the job fails with permission errors on PR creation (same as [the REST API requirement](https://docs.github.com/rest/pulls/pulls#create-a-pull-request)). For **`npm publish`**, add your own **`NPM_TOKEN`** secret on the fork if you publish outside the `@aptos-labs` scope.
 
 ## Build commands
 

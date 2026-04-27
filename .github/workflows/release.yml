@@ -10,13 +10,10 @@ concurrency:
 
 jobs:
   release:
-    # changesets/action opens a "Version Packages" PR — fork repositories deny that for
-    # GITHUB_TOKEN unless the owner enables:
+    # changesets/action creates/updates a "Version Packages" PR. If this fails with
+    # "GitHub Actions is not permitted to create or approve pull requests", enable:
     # Settings → Actions → General → Workflow permissions → Read and write →
-    # "Allow GitHub Actions to create and approve pull requests".
-    # Skip by default on forks so pushes to fork/main don't fail like:
-    # https://docs.github.com/rest/pulls/pulls#create-a-pull-request
-    if: ${{ !github.event.repository.fork }}
+    # "Allow GitHub Actions to create and approve pull requests" (required on forks too).
     name: Release
     runs-on: macos-latest
     permissions:
