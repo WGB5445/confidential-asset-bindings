@@ -16,6 +16,26 @@ Then install npm dependencies:
 npm install
 ```
 
+## Working from a fork
+
+If you push to your own fork (not directly to `aptos-labs/confidential-asset-bindings`), clone the fork and add upstream once:
+
+```bash
+git clone git@github.com:<your-username>/confidential-asset-bindings.git
+cd confidential-asset-bindings
+git remote add upstream https://github.com/aptos-labs/confidential-asset-bindings.git
+```
+
+Keep your fork’s default branch current before branching or opening PRs upstream:
+
+```bash
+git fetch upstream
+git checkout main && git merge upstream/main
+git push origin main
+```
+
+GitHub Actions workflows run **in the repository where they execute**—on a fork, Releases / manual workflows use **that fork’s** permissions and secrets (not Aptos Labs org secrets). Adjust remotes locally so `git pull`/`git push` target your fork (`origin`) as you prefer.
+
 ## Build commands
 
 | Command | What it does |
