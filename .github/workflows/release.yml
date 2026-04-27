@@ -10,10 +10,10 @@ concurrency:
 
 jobs:
   release:
-    # changesets/action creates/updates a "Version Packages" PR. If this fails with
-    # "GitHub Actions is not permitted to create or approve pull requests", enable:
-    # Settings → Actions → General → Workflow permissions → Read and write →
-    # "Allow GitHub Actions to create and approve pull requests" (required on forks too).
+    # changesets/action creates a PR via the REST API. Default github.token is blocked
+    # unless the repo enables PR creation for Actions (Settings → Actions → General).
+    # If it still fails on a fork, add repo secret CHANGESETS_GITHUB_TOKEN (classic PAT
+    # with `repo`, or fine-grained with Contents + Pull requests write on this repo).
     name: Release
     runs-on: macos-latest
     permissions:
@@ -26,6 +26,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          token: ${{ secrets.CHANGESETS_GITHUB_TOKEN || github.token }}
 
       - name: Setup tools
         uses: jdx/mise-action@v4
@@ -47,4 +48,4 @@ jobs:
           commit: "chore: version packages"
           title: "chore: version packages"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.CHANGESETS_GITHUB_TOKEN || github.token }}

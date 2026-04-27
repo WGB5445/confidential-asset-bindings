@@ -36,7 +36,14 @@ git push origin main
 
 GitHub Actions workflows run **in the repository where they execute**—on a fork, Releases / manual workflows use **that fork’s** permissions and secrets (not Aptos Labs org secrets). Adjust remotes locally so `git pull`/`git push` target your fork (`origin`) as you prefer.
 
-To **test Changesets / Release on your fork**, `changesets/action` must open PRs using `GITHUB_TOKEN`. Enable **Settings → Actions → General → Workflow permissions → Read and write**, and turn on **Allow GitHub Actions to create and approve pull requests**. Without that, the job fails with permission errors on PR creation (same as [the REST API requirement](https://docs.github.com/rest/pulls/pulls#create-a-pull-request)). For **`npm publish`**, add your own **`NPM_TOKEN`** secret on the fork if you publish outside the `@aptos-labs` scope.
+To **test Changesets / Release on your fork**, `changesets/action` opens a PR via GitHub’s API (not only git push). Do this **on your fork** `Settings → Actions → General`:
+
+1. **Workflow permissions**: **Read and write permissions**
+2. Check **Allow GitHub Actions to create and approve pull requests**, then **Save**
+
+If you still see `GitHub Actions is not permitted to create or approve pull requests` (common on forks), add a repository secret **`CHANGESETS_GITHUB_TOKEN`**: a [classic PAT](https://github.com/settings/tokens) with **`repo`** scope, or a fine-grained PAT with **Contents** and **Pull requests** (write) on that fork. The Release workflow uses `secrets.CHANGESETS_GITHUB_TOKEN || github.token` so upstream needs no extra secret.
+
+For **`npm publish`**, add your own **`NPM_TOKEN`** on the fork if you publish outside the `@aptos-labs` scope.
 
 ## Build commands
 
