@@ -174,9 +174,9 @@ jobs:
 
       - name: Install Zig
         run: |
-          ZIG_VER=0.13.0
-          curl -sSL "https://ziglang.org/download/${ZIG_VER}/zig-linux-x86_64-${ZIG_VER}.tar.xz" | tar -xJ
-          echo "$PWD/zig-linux-x86_64-${ZIG_VER}" >> "$GITHUB_PATH"
+          ZIG_VER=0.16.0
+          curl -sSL "https://ziglang.org/download/${ZIG_VER}/zig-x86_64-linux-${ZIG_VER}.tar.xz" | tar -xJ
+          echo "$PWD/zig-x86_64-linux-${ZIG_VER}" >> "$GITHUB_PATH"
 
       - name: Build FFI + Zig
         run: |

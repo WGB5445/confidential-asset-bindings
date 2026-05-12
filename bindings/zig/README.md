@@ -1,6 +1,6 @@
 # Zig demo (`bindings/zig`)
 
-Requires Zig **0.12+** and a prebuilt `libaptos_confidential_asset_ffi.a` (or Windows `.lib`).
+Requires Zig **0.16+** and a prebuilt `libaptos_confidential_asset_ffi.a` (or Windows `.lib`).
 
 ```bash
 cd ../..   # repo root
