@@ -163,7 +163,7 @@ jobs:
 
             Includes `SHA256SUMS` for all attached archives. Header: `aptos_confidential_asset.h` inside each archive.
 
-            See [docs/bindings.md](https://github.com/${{ github.repository }}/blob/main/docs/bindings.md) for consumption (Go / C++ / Zig).
+            See [docs/bindings.md](https://github.com/${{ github.repository }}/blob/main/docs/bindings.md) for consumption (Go / C++).
           files: |
             release-files/*.tar.gz
             release-files/*.zip

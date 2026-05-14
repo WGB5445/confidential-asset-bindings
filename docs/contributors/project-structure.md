@@ -20,7 +20,7 @@ confidential-asset-bindings/
 │   │       ├── lib.rs           # WASM init + panic hook
 │   │       ├── discrete_log.rs  # wasm-bindgen wrapper for DiscreteLogSolver
 │   │       └── range_proof.rs   # wasm-bindgen wrappers for batch_range_proof/batch_verify_proof
-│   ├── ffi/                     # C ABI (staticlib/cdylib) for Go/C++/Zig + iOS xcframework
+│   ├── ffi/                     # C ABI (staticlib/cdylib) for Go/C++ + iOS xcframework
 │   │   ├── Cargo.toml           # crate: aptos_confidential_asset_ffi
 │   │   ├── include/             # aptos_confidential_asset.h (canonical C header)
 │   │   └── src/                 # abi.rs, shared.rs, ffi.rs (#[no_mangle] extern "C")
@@ -106,7 +106,7 @@ Built by `scripts/build-wasm.sh` using `wasm-pack`.
 C ABI (`staticlib` / `cdylib`) around `core`. Used for:
 
 - iOS XCFramework (`scripts/build-ios.sh` builds this crate for device + simulator).
-- Native bindings (Go, C++, Zig) — see [docs/bindings.md](../../docs/bindings.md).
+- Native bindings (Go, C++) — see [docs/bindings.md](../../docs/bindings.md).
 
 ### `aptos_confidential_asset_mobile` (`rust/mobile`)
 

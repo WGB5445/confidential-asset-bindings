@@ -19,8 +19,14 @@ The `cgo_*.go` files pin `rust/target/<Rust-triple>/release/libaptos_confidentia
 ```go
 import "github.com/aptos-labs/confidential-asset-bindings/bindings/go/aptosconfidential"
 
-proof, comms, err := aptosconfidential.BatchRangeProof(values, blindings, valBase32, randBase32, 32)
+blindingsFlat, err := aptosconfidential.FlattenBlindings([][]byte{r0, r1})
+if err != nil { /* ... */ }
+proof, commsFlat, err := aptosconfidential.BatchRangeProof(values, blindingsFlat, valBase32, randBase32, 32)
 ```
+
+`BatchRangeProof` expects `blindingsFlat` as `len(values)*32` bytes (use `FlattenBlindings` from `[][]byte` blinding factors). For verification with `[][]byte` commitments, use `BatchVerifyProofSlices` or `FlattenComms` + `BatchVerifyProof`.
+
+Cross-binding verify tests use the **Rust-generated** fixture at [`tests/fixtures/golden_batch_range_proof.json`](../../tests/fixtures/golden_batch_range_proof.json) (see `emit_binding_golden_vector` in `aptos_confidential_asset_core`); that is the canonical baseline, not a JS-side vector.
 
 See [examples/go](../../examples/go).
 

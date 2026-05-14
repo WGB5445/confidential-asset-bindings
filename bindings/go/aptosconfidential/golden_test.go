@@ -1,3 +1,6 @@
+// Golden tests load tests/fixtures/golden_batch_range_proof.json, which is produced by
+// Rust (aptos_confidential_asset_core example emit_binding_golden_vector). Go FFI must
+// verify that proof/comms and round-trip prove→verify against the same inputs.
 package aptosconfidential
 
 import (

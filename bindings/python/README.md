@@ -23,3 +23,11 @@ maturin build --release
 ```
 
 Package name on PyPI is intentionally **experimental** (`aptos-confidential-asset-bindings-experimental`); rename when promoting out of experiment.
+
+## Tests vs Rust baseline
+
+`pytest tests/` reads [`tests/fixtures/golden_batch_range_proof.json`](../../tests/fixtures/golden_batch_range_proof.json), which you regenerate from **Rust** with:
+
+`cargo run --manifest-path rust/Cargo.toml --example emit_binding_golden_vector -p aptos_confidential_asset_core`
+
+Python tests do **not** take vectors from TypeScript; they check the PyO3 module against that Rust-produced file (same story as Go `golden_test.go`).

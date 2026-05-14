@@ -1,4 +1,4 @@
-# Native bindings (Go, Python, C++, Zig)
+# Native bindings (Go, Python, C++)
 
 This document describes **experimental** language bindings built from the same cryptographic core as the npm package (`@aptos-labs/confidential-asset-bindings`).
 
@@ -15,7 +15,7 @@ When cutting coordinated releases, bump versions together and record the mapping
 | Crate | Role |
 |-------|------|
 | [`aptos_confidential_asset_core`](../rust/core) | Pure crypto (Bulletproofs + discrete log) |
-| [`aptos_confidential_asset_ffi`](../rust/ffi) | C ABI (`staticlib` / `cdylib`) — **canonical for Go/C++/Zig** |
+| [`aptos_confidential_asset_ffi`](../rust/ffi) | C ABI (`staticlib` / `cdylib`) — **canonical for Go/C++** |
 | [`aptos-confidential-asset-python`](../rust/python) | PyO3 extension (Python wheels via maturin) |
 | [`aptos_confidential_asset_mobile`](../rust/mobile) | Android JNI; iOS builds the `ffi` staticlib |
 
@@ -46,9 +46,9 @@ Discrete-log **algorithm** is chosen at Rust compile time via Cargo features on 
 
 ### Cross-binding parity (what we can guarantee)
 
-- **Single implementation:** Python (PyO3), the C ABI (`rust/ffi`), and WASM/JS paths all call **`aptos_confidential_asset_core`** — there is no second copy of the Bulletproofs/discrete-log logic in Go/C++/Zig (those languages call the same Rust static library).
+- **Single implementation:** Python (PyO3), the C ABI (`rust/ffi`), and WASM/JS paths all call **`aptos_confidential_asset_core`** — there is no second copy of the Bulletproofs/discrete-log logic in Go/C++ (those languages call the same Rust static library).
 - **You cannot prove “byte-identical proofs” across two `prove` calls:** Bulletproofs generation uses internal randomness; the same inputs may yield different valid `proof` bytes. Parity checks focus on **verification** and **round-trip** (`prove` → `verify`).
-- **Shared golden fixture:** [`tests/fixtures/golden_batch_range_proof.json`](../tests/fixtures/golden_batch_range_proof.json) holds canonical inputs plus one sample `proof`/`comms_flat`. Tests: [`rust/core/tests/binding_golden_fixture.rs`](../rust/core/tests/binding_golden_fixture.rs), [`bindings/python/tests/test_golden_fixture.py`](../bindings/python/tests/test_golden_fixture.py), [`bindings/go/aptosconfidential/golden_test.go`](../bindings/go/aptosconfidential/golden_test.go). Regenerate canonical proof/comms: `cargo run --manifest-path rust/Cargo.toml --example emit_binding_golden_vector -p aptos_confidential_asset_core`.
+- **Canonical cross-binding baseline (Rust):** [`tests/fixtures/golden_batch_range_proof.json`](../tests/fixtures/golden_batch_range_proof.json) holds inputs plus a sample `proof`/`comms_flat` produced by **Rust core** (`cargo run --manifest-path rust/Cargo.toml --example emit_binding_golden_vector -p aptos_confidential_asset_core`). All bindings (Rust tests, Python, Go FFI, and TS/WASM which compiles the same `aptos_confidential_asset_core`) should **verify** this fixture consistently. Tests: [`rust/core/tests/binding_golden_fixture.rs`](../rust/core/tests/binding_golden_fixture.rs), [`bindings/python/tests/test_golden_fixture.py`](../bindings/python/tests/test_golden_fixture.py), [`bindings/go/aptosconfidential/golden_test.go`](../bindings/go/aptosconfidential/golden_test.go).
 - **Local orchestration:** [`scripts/check-binding-parity.sh`](../scripts/check-binding-parity.sh) runs Rust + Python + Go golden checks (requires `maturin develop` in `bindings/python` for pytest, and `libaptos_confidential_asset_ffi.a` for cgo).
 
 ## Go
@@ -73,17 +73,13 @@ The PyO3 crate uses `abi3-py39` so extension builds are not tied to the host Pyt
 
 See [bindings/cpp/README.md](../bindings/cpp/README.md) and [examples/cpp](../examples/cpp).
 
-## Zig
-
-See [bindings/zig/README.md](../bindings/zig/README.md).
-
 ## CI
 
-[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) includes **Bindings (FFI + Go + Python + C++)** (Ubuntu) plus an optional **Bindings (Zig smoke)** job. Together with lint / JS / Rust tests / macOS full build they gate merges to `main`.
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) includes **Bindings (FFI + Go + Python + C++)** (Ubuntu). Together with lint / JS / Rust tests / macOS full build they gate merges to `main`.
 
 ## Releases (FFI binaries)
 
-Do **not** confuse this with **`Release npm (Changesets)`** (runs on pushes to `main`): that workflow only versions/publishes the **JavaScript/npm** package. **Go / C++ / Zig** consume **`libaptos_confidential_asset_ffi`** from **GitHub Release assets**, produced by the workflow below—not from npm.
+Do **not** confuse this with **`Release npm (Changesets)`** (runs on pushes to `main`): that workflow only versions/publishes the **JavaScript/npm** package. **Go / C++** consume **`libaptos_confidential_asset_ffi`** from **GitHub Release assets**, produced by the workflow below—not from npm.
 
 Maintainers publish prebuilt static libraries with **`Release native FFI binaries`** (`bindings-release.yml`):
 

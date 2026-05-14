@@ -97,7 +97,8 @@ Details: [Native bindings](docs/bindings.md) (build + FFI release checklist).
 
 ## Links
 
-- [Native bindings (Go / Python / C++ / Zig)](docs/bindings.md)
+- [Testnet flow launcher (Go / Python / shell → same TS demo + env)](examples/testnet-flow/README.md)
+- [Native bindings (Go / Python / C++)](docs/bindings.md)
 - [API Reference](docs/api.md)
 - [Examples](docs/examples.md)
 - [Advanced usage](docs/advanced.md)

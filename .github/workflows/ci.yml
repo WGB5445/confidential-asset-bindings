@@ -153,33 +153,3 @@ jobs:
           cmake -B build -S .
           cmake --build build
           ./build/demo
-
-  zig-smoke:
-    name: Bindings (Zig smoke)
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v6
-
-      - name: Setup tools
-        uses: jdx/mise-action@v4
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: "rust -> target"
-
-      - name: Install Zig
-        run: |
-          ZIG_VER=0.16.0
-          curl -sSL "https://ziglang.org/download/${ZIG_VER}/zig-x86_64-linux-${ZIG_VER}.tar.xz" | tar -xJ
-          echo "$PWD/zig-x86_64-linux-${ZIG_VER}" >> "$GITHUB_PATH"
-
-      - name: Build FFI + Zig
-        run: |
-          cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
-          cd bindings/zig
-          zig build

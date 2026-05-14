@@ -1,6 +1,6 @@
 /**
  * C ABI for Aptos confidential asset (range proofs + discrete log).
- * Canonical header for Go, C++, Zig, and other FFI consumers.
+ * Canonical header for Go, C++, and other FFI consumers.
  * Keep in sync with rust/ffi/src/abi.rs and rust/ffi/src/ffi.rs.
  */
 #ifndef APTOS_CONFIDENTIAL_ASSET_H

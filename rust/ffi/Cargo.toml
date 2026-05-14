@@ -2,7 +2,7 @@
 name = "aptos_confidential_asset_ffi"
 version = "0.1.0"
 edition = "2021"
-description = "C ABI (staticlib/cdylib) for Aptos confidential asset crypto — shared by Go/Python/C++/Zig and iOS"
+description = "C ABI (staticlib/cdylib) for Aptos confidential asset crypto — shared by Go/Python/C++ and iOS"
 
 [lib]
 crate-type = ["staticlib", "cdylib", "rlib"]

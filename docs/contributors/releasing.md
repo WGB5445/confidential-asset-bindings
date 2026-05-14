@@ -115,7 +115,7 @@ If the Version PR conflicts with `main`, rebase or merge `main` into it and wait
 
 ## Native FFI GitHub Release (after npm)
 
-Go / C++ / Zig consumers download **prebuilt `libaptos_confidential_asset_ffi`** from GitHub Releases (not npm).
+Go / C++ consumers download **prebuilt `libaptos_confidential_asset_ffi`** from GitHub Releases (not npm).
 
 1. After npm publish succeeds, note the released version `X.Y.Z`.
 2. **Tag the same commit** (or the commit you intend to ship) and push:

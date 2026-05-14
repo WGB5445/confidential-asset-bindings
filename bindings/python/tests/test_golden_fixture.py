@@ -1,4 +1,9 @@
-"""Golden vector parity — see `docs/bindings.md` (Cross-binding parity)."""
+"""Golden vector parity — see `docs/bindings.md` (Cross-binding parity).
+
+Vectors come from Rust: tests/fixtures/golden_batch_range_proof.json is emitted by
+`emit_binding_golden_vector` (aptos_confidential_asset_core). These tests assert the
+Python extension verifies that Rust-produced proof/comms and matches round-trip behavior.
+"""
 
 from pathlib import Path
 

@@ -63,10 +63,6 @@ dist/
 # Rust
 rust/target/
 
-# Zig build cache (local `zig build`)
-bindings/zig/.zig-cache/
-bindings/zig/zig-out/
-
 # Local Python bindings dev (maturin develop)
 bindings/python/.venv/
 bindings/python/**/__pycache__/
