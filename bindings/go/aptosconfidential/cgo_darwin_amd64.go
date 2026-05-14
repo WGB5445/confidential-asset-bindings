@@ -35,6 +35,9 @@ func BatchRangeProof(values []uint64, blindingsFlat, valBase, randBase []byte, n
 	if len(valBase) != 32 || len(randBase) != 32 {
 		return nil, nil, errors.New("val_base and rand_base must be 32 bytes")
 	}
+	if err := validateRangeNumBits(numBits); err != nil {
+		return nil, nil, err
+	}
 	if len(blindingsFlat) != len(values)*32 {
 		return nil, nil, errors.New("blindings_flat must be len(values)*32 bytes")
 	}
@@ -63,6 +66,9 @@ func BatchVerifyProof(proof, commsFlat, valBase, randBase []byte, numBits int) (
 	if len(proof) == 0 || len(commsFlat) == 0 {
 		return false, errors.New("proof and comms_flat must be non-empty")
 	}
+	if err := validateRangeNumBits(numBits); err != nil {
+		return false, err
+	}
 	res := C.confidential_asset_batch_verify_proof((*C.uint8_t)(unsafe.Pointer(&proof[0])), C.size_t(len(proof)), (*C.uint8_t)(unsafe.Pointer(&commsFlat[0])), C.size_t(len(commsFlat)), (*C.uint8_t)(unsafe.Pointer(&valBase[0])), C.size_t(len(valBase)), (*C.uint8_t)(unsafe.Pointer(&randBase[0])), C.size_t(len(randBase)), C.size_t(numBits))
 	defer freeBuffer(res.error)
 	if res.error.len != 0 {
@@ -80,14 +86,31 @@ func NewSolver() *Solver {
 	return s
 }
 func (s *Solver) finalize() {
-	if s.ptr != nil {
-		C.confidential_asset_free_solver(s.ptr)
-		s.ptr = nil
+	_ = s.Close()
+}
+
+// Close releases native resources for the solver and is safe to call multiple times.
+func (s *Solver) Close() error {
+	if s == nil {
+		return errors.New("solver is nil")
 	}
+	if s.ptr == nil {
+		return nil
+	}
+	C.confidential_asset_free_solver(s.ptr)
+	s.ptr = nil
+	runtime.SetFinalizer(s, nil)
+	return nil
 }
 func (s *Solver) Solve(y []byte, maxNumBits uint8) (uint64, error) {
 	if len(y) != 32 {
 		return 0, errors.New("y must be 32 bytes")
+	}
+	if s == nil || s.ptr == nil {
+		return 0, errSolverNilOrClosed
+	}
+	if err := validateSolverMaxNumBits(maxNumBits); err != nil {
+		return 0, err
 	}
 	res := C.confidential_asset_solver_solve(s.ptr, (*C.uint8_t)(unsafe.Pointer(&y[0])), C.size_t(len(y)), C.uint8_t(maxNumBits))
 	defer freeBuffer(res.value)

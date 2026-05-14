@@ -14,6 +14,22 @@
 
 The `cgo_*.go` files pin `rust/target/<Rust-triple>/release/libaptos_confidential_asset_ffi.a` (or `aptos_confidential_asset_ffi.lib` on Windows).
 
+### Install latest released lib (without local Rust build)
+
+From repository root:
+
+```bash
+./scripts/install-go-ffi-from-release.sh
+```
+
+This detects local `GOOS` / `GOARCH` (and Linux `gnu`/`musl`), downloads the matching asset from the latest GitHub Release, verifies `SHA256SUMS`, and installs it into `rust/target/...` paths expected by `cgo_*.go`.
+
+To pin an explicit release tag:
+
+```bash
+./scripts/install-go-ffi-from-release.sh v1.2.3
+```
+
 ## Use in another module
 
 ```go
@@ -25,6 +41,10 @@ proof, commsFlat, err := aptosconfidential.BatchRangeProof(values, blindingsFlat
 ```
 
 `BatchRangeProof` expects `blindingsFlat` as `len(values)*32` bytes (use `FlattenBlindings` from `[][]byte` blinding factors). For verification with `[][]byte` commitments, use `BatchVerifyProofSlices` or `FlattenComms` + `BatchVerifyProof`.
+
+`numBits` is validated in Go before crossing FFI and must be one of `8, 16, 32, 64`. `Solver.Solve` validates `maxNumBits` (`16` or `32`) and returns an error if the solver is nil/closed.
+
+For long-running services, call `(*Solver).Close()` explicitly when done to release native resources deterministically (finalizer still exists as a fallback).
 
 Cross-binding verify tests use the **Rust-generated** fixture at [`tests/fixtures/golden_batch_range_proof.json`](../../tests/fixtures/golden_batch_range_proof.json) (see `emit_binding_golden_vector` in `aptos_confidential_asset_core`); that is the canonical baseline, not a JS-side vector.
 

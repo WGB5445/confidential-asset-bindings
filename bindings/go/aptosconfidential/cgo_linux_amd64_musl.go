@@ -40,6 +40,9 @@ func BatchRangeProof(values []uint64, blindingsFlat, valBase, randBase []byte, n
 	if len(valBase) != 32 || len(randBase) != 32 {
 		return nil, nil, errors.New("val_base and rand_base must be 32 bytes")
 	}
+	if err := validateRangeNumBits(numBits); err != nil {
+		return nil, nil, err
+	}
 	if len(blindingsFlat) != len(values)*32 {
 		return nil, nil, errors.New("blindings_flat must be len(values)*32 bytes")
 	}
@@ -75,6 +78,9 @@ func BatchVerifyProof(proof, commsFlat, valBase, randBase []byte, numBits int) (
 	if len(proof) == 0 || len(commsFlat) == 0 {
 		return false, errors.New("proof and comms_flat must be non-empty")
 	}
+	if err := validateRangeNumBits(numBits); err != nil {
+		return false, err
+	}
 	res := C.confidential_asset_batch_verify_proof(
 		(*C.uint8_t)(unsafe.Pointer(&proof[0])), C.size_t(len(proof)),
 		(*C.uint8_t)(unsafe.Pointer(&commsFlat[0])), C.size_t(len(commsFlat)),
@@ -103,16 +109,33 @@ func NewSolver() *Solver {
 }
 
 func (s *Solver) finalize() {
-	if s.ptr != nil {
-		C.confidential_asset_free_solver(s.ptr)
-		s.ptr = nil
+	_ = s.Close()
+}
+
+// Close releases native resources for the solver and is safe to call multiple times.
+func (s *Solver) Close() error {
+	if s == nil {
+		return errors.New("solver is nil")
 	}
+	if s.ptr == nil {
+		return nil
+	}
+	C.confidential_asset_free_solver(s.ptr)
+	s.ptr = nil
+	runtime.SetFinalizer(s, nil)
+	return nil
 }
 
 // Solve decrypts a balance from compressed Ristretto point y (32 bytes). maxNumBits is 16 or 32.
 func (s *Solver) Solve(y []byte, maxNumBits uint8) (uint64, error) {
 	if len(y) != 32 {
 		return 0, errors.New("y must be 32 bytes")
+	}
+	if s == nil || s.ptr == nil {
+		return 0, errSolverNilOrClosed
+	}
+	if err := validateSolverMaxNumBits(maxNumBits); err != nil {
+		return 0, err
 	}
 	res := C.confidential_asset_solver_solve(
 		s.ptr,
