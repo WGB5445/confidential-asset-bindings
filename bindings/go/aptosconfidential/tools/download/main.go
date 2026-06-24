@@ -1,0 +1,270 @@
+// Download prebuilt native FFI static libraries from GitHub Releases.
+// Run via: go generate ./aptosconfidential/... (from bindings/go/)
+package main
+
+import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+)
+
+const (
+	releaseBaseURL = "https://github.com/aptos-labs/confidential-asset-bindings/releases/download"
+	versionFile    = "../VERSION"  // relative to aptosconfidential/ (CWD during go generate)
+	nativeDir      = "./native"   // relative to aptosconfidential/
+)
+
+func main() {
+	version, err := readVersion()
+	if err != nil {
+		fatalf("read VERSION: %v", err)
+	}
+
+	goos := envOr("GOOS", runtime.GOOS)
+	goarch := envOr("GOARCH", runtime.GOARCH)
+	isMusl := detectMusl(goos)
+
+	triple, ext, libName, err := targetTriple(goos, goarch, isMusl)
+	if err != nil {
+		fatalf("%v\n\nTo build from source:\n"+
+			"  cargo build -p aptos_confidential_asset_ffi --release --target <triple>\n"+
+			"  mkdir -p bindings/go/aptosconfidential/native/<triple>\n"+
+			"  cp rust/target/<triple>/release/lib*.a bindings/go/aptosconfidential/native/<triple>/\n"+
+			"  cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/native/<triple>/",
+			err)
+	}
+
+	outDir := filepath.Join(nativeDir, triple)
+	sentinel := filepath.Join(outDir, ".version")
+
+	if existing, err2 := os.ReadFile(sentinel); err2 == nil {
+		if strings.TrimSpace(string(existing)) == version {
+			fmt.Printf("native/%s already at v%s, skipping\n", triple, version)
+			return
+		}
+	}
+
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		fatalf("mkdir %s: %v", outDir, err)
+	}
+
+	archiveName := fmt.Sprintf("aptos_confidential_asset_ffi-%s.%s", triple, ext)
+	tagURL := fmt.Sprintf("%s/v%s", releaseBaseURL, version)
+
+	fmt.Printf("Downloading native/%s for v%s...\n", triple, version)
+
+	sumsData, err := httpGet(tagURL + "/SHA256SUMS")
+	if err != nil {
+		fatalf("download SHA256SUMS: %v", err)
+	}
+	expectedHash, err := parseSHA256Sums(sumsData, archiveName)
+	if err != nil {
+		fatalf("%v", err)
+	}
+
+	archiveData, err := httpGet(tagURL + "/" + archiveName)
+	if err != nil {
+		fatalf("download %s: %v", archiveName, err)
+	}
+
+	actualHash := fmt.Sprintf("%x", sha256.Sum256(archiveData))
+	if actualHash != expectedHash {
+		fatalf("SHA256 mismatch for %s:\n  expected: %s\n  actual:   %s",
+			archiveName, expectedHash, actualHash)
+	}
+
+	if ext == "zip" {
+		err = extractZip(archiveData, outDir, triple, libName)
+	} else {
+		err = extractTarGz(archiveData, outDir, triple, libName)
+	}
+	if err != nil {
+		fatalf("extract: %v", err)
+	}
+
+	if err := os.WriteFile(sentinel, []byte(version+"\n"), 0o644); err != nil {
+		fatalf("write sentinel: %v", err)
+	}
+	fmt.Printf("native/%s: ready (v%s)\n", triple, version)
+}
+
+func readVersion() (string, error) {
+	if v := os.Getenv("CA_FFI_VERSION"); v != "" {
+		return v, nil
+	}
+	data, err := os.ReadFile(versionFile)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
+}
+
+func envOr(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func detectMusl(goos string) bool {
+	if os.Getenv("CA_MUSL") == "1" {
+		return true
+	}
+	if goos != "linux" {
+		return false
+	}
+	if strings.Contains(os.Getenv("GOFLAGS"), "musl") {
+		return true
+	}
+	matches, _ := filepath.Glob("/lib/ld-musl-*")
+	return len(matches) > 0
+}
+
+func targetTriple(goos, goarch string, isMusl bool) (triple, ext, libName string, err error) {
+	switch goos {
+	case "darwin":
+		ext, libName = "tar.gz", "libaptos_confidential_asset_ffi.a"
+		switch goarch {
+		case "arm64":
+			triple = "aarch64-apple-darwin"
+		case "amd64":
+			triple = "x86_64-apple-darwin"
+		default:
+			err = fmt.Errorf("unsupported darwin arch: %s", goarch)
+		}
+	case "linux":
+		ext, libName = "tar.gz", "libaptos_confidential_asset_ffi.a"
+		switch goarch {
+		case "amd64":
+			if isMusl {
+				triple = "x86_64-unknown-linux-musl"
+			} else {
+				triple = "x86_64-unknown-linux-gnu"
+			}
+		case "arm64":
+			if isMusl {
+				triple = "aarch64-unknown-linux-musl"
+			} else {
+				triple = "aarch64-unknown-linux-gnu"
+			}
+		default:
+			err = fmt.Errorf("unsupported linux arch: %s", goarch)
+		}
+	case "windows":
+		ext, libName = "zip", "aptos_confidential_asset_ffi.lib"
+		switch goarch {
+		case "amd64":
+			triple = "x86_64-pc-windows-msvc"
+		case "arm64":
+			triple = "aarch64-pc-windows-msvc"
+		default:
+			err = fmt.Errorf("unsupported windows arch: %s", goarch)
+		}
+	default:
+		err = fmt.Errorf("unsupported OS: %s", goos)
+	}
+	return
+}
+
+func parseSHA256Sums(data []byte, filename string) (string, error) {
+	for _, line := range strings.Split(string(data), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[1] == filename {
+			return fields[0], nil
+		}
+	}
+	return "", fmt.Errorf("no entry for %q in SHA256SUMS", filename)
+}
+
+func httpGet(url string) ([]byte, error) {
+	resp, err := http.Get(url) //nolint:noctx
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d for %s", resp.StatusCode, url)
+	}
+	return io.ReadAll(resp.Body)
+}
+
+func extractTarGz(data []byte, outDir, triple, libName string) error {
+	gr, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+	tr := tar.NewReader(gr)
+	wantPrefix := triple + "/"
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(hdr.Name, wantPrefix) {
+			continue
+		}
+		base := filepath.Base(hdr.Name)
+		if base != libName && base != "aptos_confidential_asset.h" {
+			continue
+		}
+		if err := writeFile(filepath.Join(outDir, base), tr); err != nil {
+			return fmt.Errorf("write %s: %w", base, err)
+		}
+	}
+	return nil
+}
+
+func extractZip(data []byte, outDir, triple, libName string) error {
+	r, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return err
+	}
+	wantPrefix := triple + "/"
+	for _, f := range r.File {
+		if !strings.HasPrefix(f.Name, wantPrefix) {
+			continue
+		}
+		base := filepath.Base(f.Name)
+		if base != libName && base != "aptos_confidential_asset.h" {
+			continue
+		}
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		err2 := writeFile(filepath.Join(outDir, base), rc)
+		rc.Close()
+		if err2 != nil {
+			return fmt.Errorf("write %s: %w", base, err2)
+		}
+	}
+	return nil
+}
+
+func writeFile(dest string, r io.Reader) error {
+	f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, r)
+	return err
+}
+
+func fatalf(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "error: "+format+"\n", args...)
+	os.Exit(1)
+}

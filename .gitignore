@@ -66,6 +66,7 @@ rust/target/
 # Native artifacts
 android/src/main/jniLibs/
 ios/Rust/Binaries/
+bindings/go/aptosconfidential/native/*/
 
 # Exception: wasm type stubs enable typecheck without a full build
 !build/wasm/

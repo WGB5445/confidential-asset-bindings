@@ -116,6 +116,14 @@ jobs:
       - name: Build FFI staticlib
         run: cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
 
+      - name: Stage native lib for CGO (mirrors go generate output)
+        run: |
+          TRIPLE="x86_64-unknown-linux-gnu"
+          DEST="bindings/go/aptosconfidential/native/${TRIPLE}"
+          mkdir -p "$DEST"
+          cp rust/target/release/libaptos_confidential_asset_ffi.a "$DEST/"
+          cp rust/ffi/include/aptos_confidential_asset.h "$DEST/"
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -153,6 +161,23 @@ jobs:
           cmake -B build -S .
           cmake --build build
           ./build/demo
+
+  build-python-wheel:
+    name: Build Python wheel (manylinux check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          working-directory: bindings/python
+          target: x86_64-unknown-linux-gnu
+          manylinux: manylinux_2_28
+          args: --release --out dist
+          sccache: "true"
+
+      - name: Verify abi3 wheel
+        run: ls bindings/python/dist/ | grep -E 'cp39-abi3'
 
   zig-smoke:
     name: Bindings (Zig smoke)

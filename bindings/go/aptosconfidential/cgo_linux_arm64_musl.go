@@ -3,8 +3,8 @@
 package aptosconfidential
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../../../rust/ffi/include
-#cgo LDFLAGS: ${SRCDIR}/../../../rust/target/aarch64-unknown-linux-musl/release/libaptos_confidential_asset_ffi.a -lpthread -ldl -lm
+#cgo CFLAGS: -I${SRCDIR}/native/aarch64-unknown-linux-musl
+#cgo LDFLAGS: ${SRCDIR}/native/aarch64-unknown-linux-musl/libaptos_confidential_asset_ffi.a -lpthread -ldl -lm
 #include "aptos_confidential_asset.h"
 #include <stdlib.h>
 */

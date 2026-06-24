@@ -1,12 +1,13 @@
-# Experimental: build manylinux-compatible wheels locally on Ubuntu CI.
-# Publish requires PyPI Trusted Publisher (OIDC) or PYPI_API_TOKEN — see docs/contributors/releasing.md
 name: Publish Python bindings
 
 on:
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
     inputs:
       publish_to_pypi:
-        description: "Upload wheels to PyPI (requires OIDC or PYPI_API_TOKEN)"
+        description: "Upload wheels to PyPI (requires OIDC Trusted Publisher or PYPI_API_TOKEN)"
         type: boolean
         default: false
 
@@ -14,40 +15,64 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: publish-python-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  maturin:
-    runs-on: ubuntu-latest
-    env:
-      CARGO_TARGET_DIR: ${{ github.workspace }}/rust/target
+  build-wheels:
+    name: Build wheels (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            manylinux: manylinux_2_28
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            manylinux: manylinux_2_28
+          - target: universal2-apple-darwin
+            os: macos-latest
+            manylinux: "off"
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            manylinux: "off"
+
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - uses: jdx/mise-action@v4
-
-      - uses: Swatinem/rust-cache@v2
+      - uses: PyO3/maturin-action@v1
         with:
-          workspaces: "rust -> target"
+          working-directory: bindings/python
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --out dist --interpreter 3.9 3.10 3.11 3.12 3.13
+          sccache: "true"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/upload-artifact@v4
         with:
-          python-version: "3.12"
-
-      - name: Install maturin
-        run: pip install maturin
-
-      - name: Build wheel
-        run: cd bindings/python && maturin build --release -o dist
-
-      - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-wheels
+          name: wheels-${{ matrix.target }}
           path: bindings/python/dist/*.whl
 
-      - name: Publish to PyPI
-        if: ${{ inputs.publish_to_pypi }}
-        uses: pypa/gh-action-pypi-publish@release/v1
+  publish:
+    name: Publish to PyPI
+    needs: build-wheels
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish_to_pypi)
+    environment:
+      name: pypi
+      url: https://pypi.org/p/aptos-confidential-asset-bindings-experimental
+    steps:
+      - uses: actions/download-artifact@v4
         with:
-          packages-dir: bindings/python/dist/
-          # Trusted Publisher: configure repository + this workflow on PyPI for OIDC.
-          # Otherwise set repository secret PYPI_API_TOKEN for classic tokens.
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

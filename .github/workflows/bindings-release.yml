@@ -149,21 +149,32 @@ jobs:
           echo "--- SHA256SUMS ---"
           cat SHA256SUMS
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          set -euo pipefail
+          VER="${{ steps.rel.outputs.ver }}"
+          BODY="$(awk -v ver="$VER" '
+            $0 == "## " ver { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md)"
+          if [ -z "$(echo "$BODY" | tr -d '[:space:]')" ]; then
+            echo "::warning::No CHANGELOG.md section for ${VER}; release body will be empty."
+          fi
+          {
+            echo "body<<EOF"
+            printf '%s\n' "$BODY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub Release with assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.rel.outputs.tag }}
-          name: aptos_confidential_asset_ffi ${{ steps.rel.outputs.tag }}
+          name: ${{ steps.rel.outputs.tag }}
           draft: ${{ steps.rel.outputs.draft == 'true' }}
-          generate_release_notes: true
-          body: |
-            Native FFI static libraries for `aptos_confidential_asset_ffi` (C ABI).
-
-            **Git tag:** `${{ steps.rel.outputs.tag }}` — align with npm **`@aptos-labs/confidential-asset-bindings@${{ steps.rel.outputs.ver }}`** when shipping both.
-
-            Includes `SHA256SUMS` for all attached archives. Header: `aptos_confidential_asset.h` inside each archive.
-
-            See [docs/bindings.md](https://github.com/${{ github.repository }}/blob/main/docs/bindings.md) for consumption (Go / C++ / Zig).
+          body: ${{ steps.changelog.outputs.body }}
           files: |
             release-files/*.tar.gz
             release-files/*.zip
