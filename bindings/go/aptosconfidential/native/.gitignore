@@ -1,0 +1,4 @@
+# Prebuilt native static libraries downloaded by go generate.
+# Run: go generate ./aptosconfidential/... (from bindings/go/)
+*
+!.gitignore
