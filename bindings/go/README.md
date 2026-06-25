@@ -2,20 +2,38 @@
 
 Module path: `github.com/aptos-labs/confidential-asset-bindings/bindings/go`
 
-## Quick start
+## Quick start (external project)
 
 ```bash
 # 1. Add the dependency
-go get github.com/aptos-labs/confidential-asset-bindings/bindings/go
+go get github.com/aptos-labs/confidential-asset-bindings/bindings/go@v1.1.2
 
-# 2. Download the prebuilt native library (requires internet; only needed once per version)
-go generate github.com/aptos-labs/confidential-asset-bindings/bindings/go/aptosconfidential
+# 2. Download the prebuilt native library into your project directory
+#    (only needed once per version; re-run if you update the version)
+go run github.com/aptos-labs/confidential-asset-bindings/bindings/go/aptosconfidential/tools/download@v1.1.2
 
-# 3. Build your project
-go build ./...
+# 3. Build — point the linker at the downloaded library
+CGO_LDFLAGS="-L$(pwd)/native/aarch64-apple-darwin" go build ./...
 ```
 
-The `go generate` step downloads a prebuilt static library from GitHub Releases and places it in `native/<platform>/`. No Rust toolchain required.
+Step 2 downloads a prebuilt static library from GitHub Releases into `native/<triple>/` in your current directory. No Rust toolchain required.
+
+The triple in step 3 matches your platform — see the [platform table](#supported-platforms) below.
+
+## Quick start (in this repo)
+
+```bash
+# 1. Build the Rust FFI library
+cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
+
+# 2. Stage the built library
+TRIPLE=aarch64-apple-darwin  # adjust for your platform
+mkdir -p bindings/go/aptosconfidential/native/$TRIPLE
+cp rust/target/release/libaptos_confidential_asset_ffi.a bindings/go/aptosconfidential/native/$TRIPLE/
+
+# 3. Test
+cd bindings/go && go test ./aptosconfidential/...
+```
 
 ## Usage
 

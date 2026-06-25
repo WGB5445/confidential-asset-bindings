@@ -102,10 +102,13 @@ func readVersion() (string, error) {
 		return v, nil
 	}
 	data, err := os.ReadFile(versionFile)
-	if err != nil {
-		return "", err
+	if err == nil {
+		return strings.TrimSpace(string(data)), nil
 	}
-	return strings.TrimSpace(string(data)), nil
+	if os.IsNotExist(err) {
+		return embeddedVersion, nil
+	}
+	return "", err
 }
 
 func envOr(key, fallback string) string {
