@@ -180,6 +180,19 @@ jobs:
           cd ../../examples/go
           go test -v .
 
+  check-ffi-header-sync:
+    name: FFI header in sync (rust/ffi/include ↔ bindings/go/aptosconfidential/include)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Diff headers
+        run: |
+          diff rust/ffi/include/aptos_confidential_asset.h \
+               bindings/go/aptosconfidential/include/aptos_confidential_asset.h \
+          || { echo ""; echo "ERROR: headers are out of sync."; \
+               echo "Run: cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/include/"; \
+               exit 1; }
+
   build-python-wheel:
     name: Build Python wheel (manylinux check)
     runs-on: ubuntu-latest
