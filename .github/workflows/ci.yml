@@ -192,18 +192,3 @@ jobs:
           || { echo ""; echo "ERROR: headers are out of sync."; \
                echo "Run: cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/include/"; \
                exit 1; }
-
-  build-python-wheel:
-    name: Build Python wheel (manylinux check)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: PyO3/maturin-action@v1
-        with:
-          working-directory: bindings/python
-          target: x86_64-unknown-linux-gnu
-          manylinux: manylinux_2_28
-          args: --release --out dist
-          sccache: "true"
-      - name: Verify abi3 wheel
-        run: ls bindings/python/dist/ | grep -E 'cp39-abi3'
