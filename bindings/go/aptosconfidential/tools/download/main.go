@@ -232,6 +232,9 @@ func extractTarGz(data []byte, outDir, triple, libName string) error {
 		if !strings.HasPrefix(hdr.Name, wantPrefix) {
 			continue
 		}
+		if hdr.Typeflag != tar.TypeReg {
+			continue
+		}
 		base := filepath.Base(hdr.Name)
 		if base != libName && base != "aptos_confidential_asset.h" {
 			continue
@@ -253,6 +256,9 @@ func extractZip(data []byte, outDir, triple, libName string) error {
 		if !strings.HasPrefix(f.Name, wantPrefix) {
 			continue
 		}
+		if f.Mode()&os.ModeSymlink != 0 || f.FileInfo().IsDir() {
+			continue
+		}
 		base := filepath.Base(f.Name)
 		if base != libName && base != "aptos_confidential_asset.h" {
 			continue
@@ -271,13 +277,23 @@ func extractZip(data []byte, outDir, triple, libName string) error {
 }
 
 func writeFile(dest string, r io.Reader) error {
-	f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	dir := filepath.Dir(dest)
+	tmp, err := os.CreateTemp(dir, ".dl-*")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = io.Copy(f, r)
-	return err
+	tmpName := tmp.Name()
+	_, err = io.Copy(tmp, r)
+	tmp.Close()
+	if err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	if err := os.Rename(tmpName, dest); err != nil {
+		os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 func fatalf(format string, args ...any) {
