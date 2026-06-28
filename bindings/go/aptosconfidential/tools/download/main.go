@@ -108,17 +108,20 @@ func main() {
 }
 
 func readVersion() (string, error) {
+	var raw string
 	if v := os.Getenv("CA_FFI_VERSION"); v != "" {
-		return v, nil
+		raw = v
+	} else {
+		data, err := os.ReadFile(versionFile)
+		if err == nil {
+			raw = strings.TrimSpace(string(data))
+		} else if os.IsNotExist(err) {
+			raw = embeddedVersion
+		} else {
+			return "", err
+		}
 	}
-	data, err := os.ReadFile(versionFile)
-	if err == nil {
-		return strings.TrimSpace(string(data)), nil
-	}
-	if os.IsNotExist(err) {
-		return embeddedVersion, nil
-	}
-	return "", err
+	return strings.TrimPrefix(raw, "v"), nil
 }
 
 func envOr(key, fallback string) string {
