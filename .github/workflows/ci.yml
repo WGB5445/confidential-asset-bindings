@@ -189,6 +189,7 @@ jobs:
         run: |
           diff rust/ffi/include/aptos_confidential_asset.h \
                bindings/go/aptosconfidential/include/aptos_confidential_asset.h \
-          || { echo ""; echo "ERROR: headers are out of sync."; \
-               echo "Run: cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/include/"; \
+          || { echo ""
+               echo "ERROR: headers are out of sync."
+               echo "Run: cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/include/"
                exit 1; }

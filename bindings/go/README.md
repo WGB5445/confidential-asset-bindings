@@ -80,5 +80,5 @@ See [examples/go](../../examples/go) for runnable examples.
 Override the downloaded version with the `CA_FFI_VERSION` environment variable:
 
 ```bash
-CA_FFI_VERSION=1.1.1 go run github.com/.../tools/download@v1.1.2
+CA_FFI_VERSION=1.1.1 go run github.com/aptos-labs/confidential-asset-bindings/bindings/go/aptosconfidential/tools/download@v1.1.2
 ```

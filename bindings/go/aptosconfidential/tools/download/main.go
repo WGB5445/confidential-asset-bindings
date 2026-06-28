@@ -15,13 +15,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const (
 	releaseBaseURL = "https://github.com/aptos-labs/confidential-asset-bindings/releases/download"
-	versionFile    = "../VERSION"  // relative to aptosconfidential/ (CWD during go generate)
-	nativeDir      = "./native"   // relative to aptosconfidential/
+	versionFile    = "../VERSION" // relative to aptosconfidential/ (CWD during go generate)
+	nativeDir      = "./native"  // relative to aptosconfidential/
+	httpTimeout    = 120 * time.Second
 )
+
+var httpClient = &http.Client{Timeout: httpTimeout}
 
 func main() {
 	version, err := readVersion()
@@ -38,8 +42,7 @@ func main() {
 		fatalf("%v\n\nTo build from source:\n"+
 			"  cargo build -p aptos_confidential_asset_ffi --release --target <triple>\n"+
 			"  mkdir -p bindings/go/aptosconfidential/native/<triple>\n"+
-			"  cp rust/target/<triple>/release/lib*.a bindings/go/aptosconfidential/native/<triple>/\n"+
-			"  cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/native/<triple>/",
+			"  cp rust/target/<triple>/release/lib*.a bindings/go/aptosconfidential/native/<triple>/",
 			err)
 	}
 
@@ -89,6 +92,13 @@ func main() {
 	}
 	if err != nil {
 		fatalf("extract: %v", err)
+	}
+
+	// Verify expected outputs are present before writing the sentinel.
+	for _, name := range []string{libName, "aptos_confidential_asset.h"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); err != nil {
+			fatalf("extraction succeeded but %s is missing in %s", name, outDir)
+		}
 	}
 
 	if err := os.WriteFile(sentinel, []byte(version+"\n"), 0o644); err != nil {
@@ -189,7 +199,7 @@ func parseSHA256Sums(data []byte, filename string) (string, error) {
 }
 
 func httpGet(url string) ([]byte, error) {
-	resp, err := http.Get(url) //nolint:noctx
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
