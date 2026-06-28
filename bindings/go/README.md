@@ -51,7 +51,7 @@ solver := aptosconfidential.NewSolver()
 value, err := solver.Solve(compressedPoint32, 32)
 ```
 
-`numBits` must be one of `8, 16, 32, 64`. `Solver.Solve` validates `maxNumBits` (`16` or `32`).
+`numBits` must be one of `8, 16, 32, 64`. `Solver.Solve` returns an error if `maxNumBits` is invalid, or if the solver is nil or already closed.
 
 For long-running services, call `(*Solver).Close()` explicitly to release native resources deterministically.
 
@@ -77,8 +77,10 @@ See [examples/go](../../examples/go) for runnable examples.
 
 ## Version pinning
 
-Override the downloaded version with the `CA_FFI_VERSION` environment variable:
+Override the downloaded native library version with the `CA_FFI_VERSION` environment variable:
 
 ```bash
 CA_FFI_VERSION=1.1.1 go run github.com/aptos-labs/confidential-asset-bindings/bindings/go/aptosconfidential/tools/download@v1.1.2
 ```
+
+> **Warning:** The Go module ships a header file matching its own release. Overriding `CA_FFI_VERSION` downloads a different library version but keeps the module's original header. Use a matching `@vX.Y.Z` module version to avoid ABI mismatches.

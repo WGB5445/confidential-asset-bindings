@@ -4,7 +4,7 @@ package aptosconfidential
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/include
-#cgo LDFLAGS: ${SRCDIR}/native/aarch64-pc-windows-msvc/aptos_confidential_asset_ffi.lib
+#cgo LDFLAGS: -L${SRCDIR}/native/aarch64-pc-windows-msvc -l:aptos_confidential_asset_ffi.lib
 #include "aptos_confidential_asset.h"
 #include <stdlib.h>
 */

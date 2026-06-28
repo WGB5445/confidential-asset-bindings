@@ -20,8 +20,7 @@ import (
 
 const (
 	releaseBaseURL = "https://github.com/aptos-labs/confidential-asset-bindings/releases/download"
-	versionFile    = "../VERSION" // relative to aptosconfidential/ (CWD during go generate)
-	nativeDir      = "./native"  // relative to aptosconfidential/
+	nativeDir      = "./native" // relative to aptosconfidential/
 	httpTimeout    = 120 * time.Second
 )
 
@@ -108,18 +107,9 @@ func main() {
 }
 
 func readVersion() (string, error) {
-	var raw string
+	raw := embeddedVersion
 	if v := os.Getenv("CA_FFI_VERSION"); v != "" {
 		raw = v
-	} else {
-		data, err := os.ReadFile(versionFile)
-		if err == nil {
-			raw = strings.TrimSpace(string(data))
-		} else if os.IsNotExist(err) {
-			raw = embeddedVersion
-		} else {
-			return "", err
-		}
 	}
 	return strings.TrimPrefix(raw, "v"), nil
 }
@@ -283,12 +273,17 @@ func writeFile(dest string, r io.Reader) error {
 		return err
 	}
 	tmpName := tmp.Name()
-	_, err = io.Copy(tmp, r)
-	tmp.Close()
-	if err != nil {
+	_, copyErr := io.Copy(tmp, r)
+	closeErr := tmp.Close()
+	if copyErr != nil {
 		os.Remove(tmpName)
-		return err
+		return copyErr
 	}
+	if closeErr != nil {
+		os.Remove(tmpName)
+		return closeErr
+	}
+	os.Remove(dest) // pre-remove so os.Rename succeeds on Windows when dest exists
 	if err := os.Rename(tmpName, dest); err != nil {
 		os.Remove(tmpName)
 		return err
