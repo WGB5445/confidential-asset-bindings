@@ -143,7 +143,7 @@ func targetTriple(goos, goarch string, isMusl bool) (triple, ext, libName string
 		case "arm64":
 			triple = "aarch64-apple-darwin"
 		case "amd64":
-			triple = "x86_64-apple-darwin"
+			err = fmt.Errorf("no prebuilt for x86_64-apple-darwin (Intel macOS); build from source")
 		default:
 			err = fmt.Errorf("unsupported darwin arch: %s", goarch)
 		}
@@ -171,7 +171,7 @@ func targetTriple(goos, goarch string, isMusl bool) (triple, ext, libName string
 		case "amd64":
 			triple = "x86_64-pc-windows-msvc"
 		case "arm64":
-			triple = "aarch64-pc-windows-msvc"
+			err = fmt.Errorf("no prebuilt for aarch64-pc-windows-msvc (Windows arm64); build from source")
 		default:
 			err = fmt.Errorf("unsupported windows arch: %s", goarch)
 		}
@@ -222,7 +222,7 @@ func extractTarGz(data []byte, outDir, triple, libName string) error {
 		if !strings.HasPrefix(hdr.Name, wantPrefix) {
 			continue
 		}
-		if hdr.Typeflag != tar.TypeReg {
+		if hdr.Typeflag != tar.TypeReg && hdr.Typeflag != tar.TypeRegA {
 			continue
 		}
 		base := filepath.Base(hdr.Name)

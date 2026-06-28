@@ -59,16 +59,16 @@ See [examples/go](../../examples/go) for runnable examples.
 
 ## Supported platforms
 
-| Platform | Triple | Notes |
-|---|---|---|
-| macOS arm64 (M1/M2/M3) | `aarch64-apple-darwin` | |
-| macOS amd64 (Intel) | `x86_64-apple-darwin` | |
-| Linux amd64 (glibc) | `x86_64-unknown-linux-gnu` | |
-| Linux amd64 (musl) | `x86_64-unknown-linux-musl` | `-tags musl` required |
-| Linux arm64 (glibc) | `aarch64-unknown-linux-gnu` | |
-| Linux arm64 (musl) | `aarch64-unknown-linux-musl` | `-tags musl` required |
-| Windows amd64 | `x86_64-pc-windows-msvc` | |
-| Windows arm64 | `aarch64-pc-windows-msvc` | |
+| Platform | Triple | Prebuilt download | Notes |
+|---|---|---|---|
+| macOS arm64 (M1/M2/M3) | `aarch64-apple-darwin` | Yes | |
+| macOS amd64 (Intel) | `x86_64-apple-darwin` | No — build from source | |
+| Linux amd64 (glibc) | `x86_64-unknown-linux-gnu` | Yes | |
+| Linux amd64 (musl) | `x86_64-unknown-linux-musl` | Yes | `-tags musl` required |
+| Linux arm64 (glibc) | `aarch64-unknown-linux-gnu` | Yes | |
+| Linux arm64 (musl) | `aarch64-unknown-linux-musl` | Yes | `-tags musl` required |
+| Windows amd64 | `x86_64-pc-windows-msvc` | Yes | |
+| Windows arm64 | `aarch64-pc-windows-msvc` | No — build from source | |
 
 ## Prerequisites
 
