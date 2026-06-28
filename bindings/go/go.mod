@@ -1,3 +1,3 @@
-module github.com/aptos-labs/confidential-asset-bindings/bindings/go
+module github.com/WGB5445/confidential-asset-bindings/bindings/go
 
 go 1.22

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	releaseBaseURL = "https://github.com/aptos-labs/confidential-asset-bindings/releases/download"
+	releaseBaseURL = "https://github.com/WGB5445/confidential-asset-bindings/releases/download"
 	nativeDir      = "./native" // relative to CWD (project root for external consumers, aptosconfidential/ via go generate)
 	httpTimeout    = 120 * time.Second
 )
