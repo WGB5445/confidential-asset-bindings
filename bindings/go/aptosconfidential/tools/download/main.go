@@ -38,10 +38,13 @@ func main() {
 
 	triple, ext, libName, err := targetTriple(goos, goarch, isMusl)
 	if err != nil {
-		fatalf("%v\n\nTo build from source:\n"+
-			"  cargo build -p aptos_confidential_asset_ffi --release --target <triple>\n"+
-			"  mkdir -p bindings/go/aptosconfidential/native/<triple>\n"+
-			"  cp rust/target/<triple>/release/lib*.a bindings/go/aptosconfidential/native/<triple>/",
+		fatalf("%v\n\nTo build from source (replace <triple> with your target, e.g. x86_64-apple-darwin):\n"+
+			"  git clone https://github.com/aptos-labs/confidential-asset-bindings\n"+
+			"  cargo build -p aptos_confidential_asset_ffi --release \\\n"+
+			"    --manifest-path confidential-asset-bindings/rust/Cargo.toml --target <triple>\n"+
+			"  mkdir -p ./native/<triple>\n"+
+			"  cp confidential-asset-bindings/rust/target/<triple>/release/lib*.a ./native/<triple>/\n"+
+			"  CGO_LDFLAGS=\"-L$(pwd)/native/<triple>\" go build ./...",
 			err)
 	}
 

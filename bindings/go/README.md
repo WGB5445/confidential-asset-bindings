@@ -70,6 +70,28 @@ See [examples/go](../../examples/go) for runnable examples.
 | Windows amd64 | `x86_64-pc-windows-msvc` | Yes | |
 | Windows arm64 | `aarch64-pc-windows-msvc` | No — build from source | |
 
+## Building from source (unsupported platforms)
+
+For platforms marked "No — build from source" (Intel macOS, Windows arm64):
+
+```bash
+# 1. Clone the repo and build the Rust FFI library
+git clone https://github.com/aptos-labs/confidential-asset-bindings
+cargo build -p aptos_confidential_asset_ffi --release \
+  --manifest-path confidential-asset-bindings/rust/Cargo.toml \
+  --target x86_64-apple-darwin  # replace with your triple
+
+# 2. Copy the library into your project
+mkdir -p ./native/x86_64-apple-darwin
+cp confidential-asset-bindings/rust/target/x86_64-apple-darwin/release/libaptos_confidential_asset_ffi.a \
+   ./native/x86_64-apple-darwin/
+
+# 3. Build your project, pointing the linker at the library
+CGO_LDFLAGS="-L$(pwd)/native/x86_64-apple-darwin" go build ./...
+```
+
+The Go module already contains the header file — no separate header copy is needed.
+
 ## Prerequisites
 
 - `CGO_ENABLED=1` (default on native builds)
