@@ -72,3 +72,6 @@ ios/Rust/Binaries/
 !build/wasm/
 build/wasm/*
 !build/wasm/aptos_confidential_asset_wasm.d.ts
+
+# Go native prebuilts (populated by go generate or download tool)
+bindings/go/aptosconfidential/native/*/

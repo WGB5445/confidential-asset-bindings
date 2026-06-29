@@ -159,6 +159,13 @@ jobs:
       - name: Build FFI staticlib
         run: cargo build -p aptos_confidential_asset_ffi --release --manifest-path rust/Cargo.toml
 
+      - name: Stage native lib for CGO
+        run: |
+          TRIPLE="x86_64-unknown-linux-gnu"
+          DEST="bindings/go/aptosconfidential/native/${TRIPLE}"
+          mkdir -p "$DEST"
+          cp rust/target/release/libaptos_confidential_asset_ffi.a "$DEST/"
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -172,3 +179,27 @@ jobs:
           go test -v ./aptosconfidential/...
           cd ../../examples/go
           go test -v .
+
+  check-ffi-header-sync:
+    name: FFI header in sync (rust/ffi/include ↔ bindings/go/aptosconfidential/include)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Diff headers
+        run: |
+          if ! diff rust/ffi/include/aptos_confidential_asset.h \
+                    bindings/go/aptosconfidential/include/aptos_confidential_asset.h; then
+            echo ""
+            echo "ERROR: headers are out of sync."
+            echo "Run: cp rust/ffi/include/aptos_confidential_asset.h bindings/go/aptosconfidential/include/"
+            exit 1
+          fi
+      - name: Check VERSION matches embeddedVersion
+        run: |
+          FILE_VER="$(tr -d '[:space:]' < bindings/go/VERSION)"
+          EMBEDDED_VER="$(sed -n 's/^const embeddedVersion = "\(.*\)"/\1/p' bindings/go/aptosconfidential/tools/download/version.go)"
+          if [ "$FILE_VER" != "$EMBEDDED_VER" ]; then
+            echo "ERROR: bindings/go/VERSION ($FILE_VER) does not match embeddedVersion in version.go ($EMBEDDED_VER)."
+            echo "Update both files together when bumping the FFI version."
+            exit 1
+          fi
